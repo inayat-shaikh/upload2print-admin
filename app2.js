@@ -285,11 +285,9 @@ async function openFilePreview(file) {
   try {
     if (fileExtension === "pdf") {
       printButton.classList.add("hidden"); // Hide print button for PDFs
-      downloadButton.classList.add("hidden"); // Hide download button for PDFs
       await previewPdfFile(file);
     } else if (fileExtension === "doc" || fileExtension === "docx") {
       printButton.classList.remove("hidden"); // Show print button for DOC/DOCX
-      downloadButton.classList.remove("hidden"); // Show download button for DOC/DOCX
       await previewDocFile(file);
     } else {
       printButton.classList.remove("hidden"); // Default to showing print button for unsupported types
@@ -357,40 +355,72 @@ async function printFile() {
     .toLowerCase();
   if (fileExtension === "doc" || fileExtension === "docx") {
     if (!currentFileId) {
+      console.error("Print failed: currentFileId is not set");
       alert("Please wait for the document to load before printing");
-      console.warn("currentFileId is not set yet");
       return;
     }
-    const printWindow = window.open(
-      `https://docs.google.com/document/d/${currentFileId}/preview?tab=t.0`,
-      "_blank"
+
+    console.log(
+      "Opening new tab for printing DOC/DOCX with fileId:",
+      currentFileId
     );
+    const printUrl = `https://docs.google.com/document/d/${currentFileId}/preview?tab=t.0`;
+    console.log("Print URL:", printUrl);
+
+    const printWindow = window.open(printUrl, "_blank");
     if (!printWindow) {
+      console.error("Failed to open new tab: Pop-up blocked or browser issue");
       alert("Please allow pop-ups to print the document");
-      console.error("Pop-up blocked for DOC/DOCX printing");
       return;
     }
+
+    console.log("New tab opened successfully, waiting for load event...");
     printWindow.addEventListener(
       "load",
       () => {
+        console.log("Print window loaded successfully");
         setTimeout(() => {
           try {
-            printWindow.focus(); // Ensure the window is focused
+            console.log("Focusing print window...");
+            printWindow.focus();
+            console.log("Attempting to open print dialog...");
             printWindow.print();
+            console.log("Print dialog triggered successfully");
             printWindow.close();
+            console.log("Print window closed");
           } catch (e) {
-            console.error("Error printing DOC/DOCX:", e);
+            console.error("Error during print operation:", e);
+            console.error("Error details:", {
+              message: e.message,
+              stack: e.stack,
+              name: e.name,
+            });
             alert(
               "Failed to print document. Please try printing manually from the preview."
             );
           }
-        }, 2000); // Increased delay to ensure rendering
+        }, 2000); // Delay to ensure rendering
       },
       { once: true }
     );
+
+    // Fallback: Check if the load event fails to fire
+    setTimeout(() => {
+      if (printWindow.document.readyState !== "complete") {
+        console.error("Print window load event did not fire within 10 seconds");
+        console.log(
+          "Current document.readyState:",
+          printWindow.document.readyState
+        );
+        alert(
+          "Failed to load document for printing. Please try printing manually from the preview."
+        );
+        printWindow.close();
+      }
+    }, 10000); // 10-second timeout
   } else {
+    console.warn("Printing not supported for file type:", fileExtension);
     alert("Printing is not supported for this file type");
-    console.warn("Unsupported file type for printing:", fileExtension);
   }
 }
 
