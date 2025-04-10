@@ -172,6 +172,7 @@ function resetPreviewModal() {
   printButton.classList.remove("hidden");
   resetPinInputs();
   expectedPin = null;
+  currentGoogleDocId = null; // Reset Google Doc ID
 }
 
 // Setup daily cache clear interval
@@ -742,7 +743,102 @@ function renderFiles(files) {
         <path class="st7" d="M89.56,292.21c0.43,3.35,0.71,6.26,0.85,8.76h0.5c0.19-2.37,0.59-5.22,1.19-8.56c0.6-3.34,1.15-6.16,1.63-8.47l22.96-98.49h29.68l23.81,97.01c1.38,6.03,2.37,12.15,2.96,18.3h0.39c0.44-5.97,1.27-11.9,2.48-17.76l18.99-97.6h27.02l-33.36,141.13H157.1l-22.62-93.47c-0.65-2.69-1.4-6.2-2.23-10.53s-1.33-7.48-1.54-9.47h-0.39c-0.26,2.3-0.77,5.71-1.54,10.23c-0.76,4.52-1.37,7.87-1.83,10.04l-21.27,93.17h-32.1L40.04,185.46h27.5l20.68,98.69C88.7,286.17,89.14,288.87,89.56,292.21z"/>
       </svg>
     `;
-    const icon = fileType === "PDF" ? pdfIcon : docIcon;
+    const googleDocIcon = `
+      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20px" height="20px" viewBox="0 0 47 65" version="1.1" class="w-5 h-5 shrink-0">
+        <defs>
+          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-1"/>
+          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-3"/>
+          <linearGradient x1="50.0053945%" y1="8.58610612%" x2="50.0053945%" y2="100.013939%" id="linearGradient-5">
+            <stop stop-color="#1A237E" stop-opacity="0.2" offset="0%"/>
+            <stop stop-color="#1A237E" stop-opacity="0.02" offset="100%"/>
+          </linearGradient>
+          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-6"/>
+          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-8"/>
+          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-10"/>
+          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-12"/>
+          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-14"/>
+          <radialGradient cx="3.16804688%" cy="2.71744318%" fx="3.16804688%" fy="2.71744318%" r="161.248516%" gradientTransform="translate(0.031680,0.027174),scale(1.000000,0.723077),translate(-0.031680,-0.027174)" id="radialGradient-16">
+            <stop stop-color="#FFFFFF" stop-opacity="0.1" offset="0%"/>
+            <stop stop-color="#FFFFFF" stop-opacity="0" offset="100%"/>
+          </radialGradient>
+        </defs>
+        <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+          <g id="Consumer-Apps-Docs-Large-VD-R8" transform="translate(-451.000000, -463.000000)">
+            <g id="Hero" transform="translate(0.000000, 63.000000)">
+              <g id="Personal" transform="translate(277.000000, 309.000000)">
+                <g id="Docs-icon" transform="translate(174.000000, 91.000000)">
+                  <g id="Group">
+                    <g id="Clipped">
+                      <mask id="mask-2" fill="white">
+                        <use xlink:href="#path-1"/>
+                      </mask>
+                      <g id="SVGID_1_"/>
+                      <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L36.71875,10.3409091 L29.375,0 Z" id="Path" fill="#4285F4" fill-rule="nonzero" mask="url(#mask-2)"/>
+                    </g>
+                    <g id="Clipped">
+                      <mask id="mask-4" fill="white">
+                        <use xlink:href="#path-3"/>
+                      </mask>
+                      <g id="SVGID_1_"/>
+                      <polygon id="Path" fill="url(#linearGradient-5)" fill-rule="nonzero" mask="url(#mask-4)" points="30.6638281 16.4309659 47 32.8582386 47 17.7272727"/>
+                    </g>
+                    <g id="Clipped">
+                      <mask id="mask-7" fill="white">
+                        <use xlink:href="#path-6"/>
+                      </mask>
+                      <g id="SVGID_1_"/>
+                      <path d="M11.75,47.2727273 L35.25,47.2727273 L35.25,44.3181818 L11.75,44.3181818 L11.75,47.2727273 Z M11.75,53.1818182 L29.375,53.1818182 L29.375,50.2272727 L11.75,50.2272727 L11.75,53.1818182 Z M11.75,32.5 L11.75,35.4545455 L35.25,35.4545455 L35.25,32.5 L11.75,32.5 Z M11.75,41.3636364 L35.25,41.3636364 L35.25,38.4090909 L11.75,38.4090909 L11.75,41.3636364 Z" id="Shape" fill="#F1F1F1" fill-rule="nonzero" mask="url(#mask-7)"/>
+                    </g>
+                    <g id="Clipped">
+                      <mask id="mask-9" fill="white">
+                        <use xlink:href="#path-8"/>
+                      </mask>
+                      <g id="SVGID_1_"/>
+                      <g id="Group" mask="url(#mask-9)">
+                        <g transform="translate(26.437500, -2.954545)">
+                          <path d="M2.9375,2.95454545 L2.9375,16.25 C2.9375,18.6985795 4.90929688,20.6818182 7.34375,20.6818182 L20.5625,20.6818182 L2.9375,2.95454545 Z" id="Path" fill="#A1C2FA" fill-rule="nonzero"/>
+                        </g>
+                      </g>
+                    </g>
+                    <g id="Clipped">
+                      <mask id="mask-11" fill="white">
+                        <use xlink:href="#path-10"/>
+                      </mask>
+                      <g id="SVGID_1_"/>
+                      <path d="M4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,4.80113636 C0,2.36363636 1.9828125,0.369318182 4.40625,0.369318182 L29.375,0.369318182 L29.375,0 L4.40625,0 Z" id="Path" fill-opacity="0.2" fill="#FFFFFF" fill-rule="nonzero" mask="url(#mask-11)"/>
+                    </g>
+                    <g id="Clipped">
+                      <mask id="mask-13" fill="white">
+                        <use xlink:href="#path-12"/>
+                      </mask>
+                      <g id="SVGID_1_"/>
+                      <path d="M42.59375,64.6306818 L4.40625,64.6306818 C1.9828125,64.6306818 0,62.6363636 0,60.1988636 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,60.1988636 C47,62.6363636 45.0171875,64.6306818 42.59375,64.6306818 Z" id="Path" fill-opacity="0.2" fill="#1A237E" fill-rule="nonzero" mask="url(#mask-13)"/>
+                    </g>
+                    <g id="Clipped">
+                      <mask id="mask-15" fill="white">
+                        <use xlink:href="#path-14"/>
+                      </mask>
+                      <g id="SVGID_1_"/>
+                      <path d="M33.78125,17.7272727 C31.3467969,17.7272727 29.375,15.7440341 29.375,13.2954545 L29.375,13.6647727 C29.375,16.1133523 31.3467969,18.0965909 33.78125,18.0965909 L47,18.0965909 L47,17.7272727 L33.78125,17.7272727 Z" id="Path" fill-opacity="0.1" fill="#1A237E" fill-rule="nonzero" mask="url(#mask-15)"/>
+                    </g>
+                  </g>
+                  <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="Path" fill="url(#radialGradient-16)" fill-rule="nonzero"/>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+    `;
+
+    // Check if the file has a Google Doc ID in its name
+    const hasGoogleDocId = file.name.includes("{") && file.name.includes("}");
+
+    // Use the appropriate icon and values based on whether it's a Google Doc-linked file
+    const icon =
+      fileType === "PDF" ? pdfIcon : hasGoogleDocId ? googleDocIcon : docIcon;
+    const displaySize = hasGoogleDocId ? "Uploaded Through Link" : size;
+    const displayFileType = hasGoogleDocId ? "G DOC" : fileType;
 
     const chatBubble = document.createElement("li");
     chatBubble.className = "mb-10 ms-6 chat-bubble";
@@ -773,11 +869,11 @@ ${time}
                       <span class="experiment-number">${experimentNumber}</span>
                     </span>
                     <span class="flex text-xs font-normal text-gray-500 dark:text-gray-400 gap-2">
-                      <span class="file-size">${size}</span>
+                      <span class="file-size">${displaySize}</span>
                       <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="self-center" width="3" height="4" viewBox="0 0 3 4" fill="none">
                         <circle cx="1.5" cy="2" r="1.5" fill="#6B7280"></circle>
                       </svg>
-                      <span class="file-type">${fileType}</span>
+                      <span class="file-type">${displayFileType}</span>
                     </span>
                   </div>
                 </div>
@@ -807,14 +903,31 @@ ${time}
 }
 
 // Open file preview modal with PIN handling
+// State (add this line near the top with other global variables)
+let currentGoogleDocId = null; // To store the Google Doc ID extracted from filename
+
+// Open file preview modal with PIN handling
 async function openFilePreview(file) {
   currentFileId = file.id;
   const fileName = file.name;
-  const pinMatch = fileName.match(/\[S\d+\]_(\d{4})/); // Extract PIN like "2905" from "24_EXP5_DAA [S2457]_2905"
-  expectedPin = pinMatch ? pinMatch[1] : null;
-  const displayName = expectedPin
-    ? fileName.replace(`_${expectedPin}`, "").trim()
-    : fileName; // Remove PIN from display name
+
+  // Extract components from filename using regex
+  const filePattern =
+    /(\d+)_([A-Za-z0-9_]+)\s*\[([A-Za-z0-9]+)\](?:_(\d{4}))?(?:\{([A-Za-z0-9_-]+)\})?\.([a-zA-Z]+)/;
+  const match = fileName.match(filePattern);
+  let googleDocId = null;
+  let displayName = fileName;
+
+  if (match) {
+    const [, rollNumber, experiment, fileId, pin, docId, extension] = match;
+    expectedPin = pin || null; // PIN like "2905" or null if not present
+    googleDocId = docId || null; // Google Doc ID like "1H48XJ0dwG80RShyLxMS8WNXlKaYyF4WyEA9b_P1l9EQ"
+    currentGoogleDocId = googleDocId; // Store globally for print/download
+    displayName = `${rollNumber}_${experiment} [${fileId}].${extension}`; // e.g., "24_EXP3_IAI [S3354].doc"
+  } else {
+    currentGoogleDocId = null; // Reset if no match
+  }
+
   previewFilename.textContent = displayName;
   previewModal.classList.remove("hidden");
   pdfContainer.classList.add("hidden");
@@ -844,13 +957,15 @@ async function openFilePreview(file) {
         if (fileExtension === "pdf") {
           docPreviewIframe.src = currentFileBlob;
         } else if (fileExtension === "doc" || fileExtension === "docx") {
-          docPreviewIframe.src = `https://docs.google.com/document/d/${file.id}/preview?tab=t.0`;
+          docPreviewIframe.src = `https://docs.google.com/document/d/${
+            googleDocId || file.id
+          }/preview?tab=t.0`;
         }
       } else {
         if (fileExtension === "pdf") {
           await previewPdfFile(file);
         } else if (fileExtension === "doc" || fileExtension === "docx") {
-          await previewDocFile(file);
+          await previewDocFile(file, googleDocId);
         } else {
           showPreviewError("Unsupported file type");
           return;
@@ -871,7 +986,9 @@ async function openFilePreview(file) {
           docPreviewIframe.src = currentFileBlob;
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           printButton.classList.remove("hidden");
-          docPreviewIframe.src = `https://docs.google.com/document/d/${file.id}/preview?tab=t.0`;
+          docPreviewIframe.src = `https://docs.google.com/document/d/${
+            googleDocId || file.id
+          }/preview?tab=t.0`;
         }
         previewLoading.classList.add("hidden");
         docPreviewIframe.classList.remove("hidden");
@@ -881,7 +998,7 @@ async function openFilePreview(file) {
           await previewPdfFile(file);
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           printButton.classList.remove("hidden");
-          await previewDocFile(file);
+          await previewDocFile(file, googleDocId);
         } else {
           printButton.classList.remove("hidden");
           showPreviewError("Unsupported file type");
@@ -918,9 +1035,10 @@ async function previewPdfFile(file) {
 }
 
 // Preview DOC/DOCX file using Google Docs preview
-async function previewDocFile(file) {
+async function previewDocFile(file, googleDocId = null) {
   try {
-    docPreviewIframe.src = `https://docs.google.com/document/d/${file.id}/preview?tab=t.0`;
+    const docId = googleDocId || file.id; // Use Google Doc ID from filename if available, otherwise fallback to file.id
+    docPreviewIframe.src = `https://docs.google.com/document/d/${docId}/preview?tab=t.0`;
     fileCache[file.id] = {
       blob: docPreviewIframe.src,
       mimeType: file.mimeType,
@@ -954,13 +1072,14 @@ async function printFile() {
     .pop()
     .toLowerCase();
   if (fileExtension === "doc" || fileExtension === "docx") {
-    if (!currentFileId) {
-      console.error("Print failed: currentFileId is not set");
+    if (!currentFileId && !currentGoogleDocId) {
+      console.error("Print failed: no file ID or Google Doc ID is set");
       alert("Please wait for the document to load before printing");
       return;
     }
 
-    const printUrl = `https://docs.google.com/document/d/${currentFileId}/preview?tab=t.0`;
+    const fileIdToUse = currentGoogleDocId || currentFileId; // Prefer Google Doc ID if available
+    const printUrl = `https://docs.google.com/document/d/${fileIdToUse}/preview?tab=t.0`;
     const printWindow = window.open(printUrl, "_blank");
     if (!printWindow) {
       alert("Please allow pop-ups to print the document");
@@ -1000,9 +1119,54 @@ async function printFile() {
 }
 
 // Download the current file
-function downloadFile() {
-  if (currentFileId) {
-    downloadFileFromGDrive(currentFileId, previewFilename.textContent);
+async function downloadFile() {
+  // Store the original button content
+  const originalButtonContent = downloadButton.innerHTML;
+
+  // Replace button content with spinner
+  downloadButton.innerHTML = `
+    <div role="status">
+      <svg aria-hidden="true" class="w-6 h-6 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+      </svg>
+      <span class="sr-only">Loading...</span>
+    </div>
+  `;
+  downloadButton.disabled = true; // Disable button to prevent multiple clicks
+
+  if (currentGoogleDocId) {
+    // Use Google Doc ID for download if available
+    try {
+      const response = await fetch(
+        `https://docs.google.com/document/d/${currentGoogleDocId}/export?format=docx`
+      );
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+      const blob = await response.blob();
+      const downloadLink = document.createElement("a");
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = previewFilename.textContent; // Use cleaned filename, e.g., "24_EXP3_IAI [S3354].doc"
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    } catch (error) {
+      console.error("Error downloading Google Doc:", error);
+      alert("Failed to download file. Please try again.");
+    } finally {
+      // Restore original button content
+      downloadButton.innerHTML = originalButtonContent;
+      downloadButton.disabled = false;
+    }
+  } else if (currentFileId) {
+    // Fallback to existing download logic
+    try {
+      await downloadFileFromGDrive(currentFileId, previewFilename.textContent);
+    } finally {
+      // Restore original button content
+      downloadButton.innerHTML = originalButtonContent;
+      downloadButton.disabled = false;
+    }
   }
 }
 
