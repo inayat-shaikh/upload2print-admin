@@ -29,6 +29,14 @@ const docPreviewIframe = document.getElementById("doc-preview-iframe");
 const closeModal = document.getElementById("close-modal");
 const printButton = document.getElementById("print-button");
 const downloadButton = document.getElementById("download-button");
+const pinContainer = document.getElementById("pin-container");
+const incorrectPin = document.getElementById("incorrect-pin");
+const pinInputs = [
+  document.getElementById("code-1"),
+  document.getElementById("code-2"),
+  document.getElementById("code-3"),
+  document.getElementById("code-4"),
+];
 
 // State
 let currentFolderId = null;
@@ -42,12 +50,14 @@ let fileCache = {}; // { fileId: { blob: string, mimeType: string } }
 let currentCourse = null;
 let cacheTimestamp = new Date().toDateString();
 let pollingIntervalId = null;
+let expectedPin = null; // To store the PIN extracted from filename
 
 // Initialize the application
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
   setupEventListeners();
   setupCacheClearInterval();
+  setupPinInputListeners();
 });
 
 // Initialize the app
@@ -67,30 +77,12 @@ async function initApp() {
 // Setup event listeners
 function setupEventListeners() {
   closeModal.addEventListener("click", () => {
-    previewModal.classList.add("hidden");
-    if (currentPreviewUrl) {
-      revokeTemporaryAccess(currentFileId).catch((e) =>
-        console.error("Failed to revoke temporary access:", e)
-      );
-      currentPreviewUrl = null;
-    }
-    docPreviewIframe.src = "";
-    currentFileBlob = null;
-    printButton.classList.remove("hidden");
+    resetPreviewModal();
   });
 
   previewModal.addEventListener("click", (e) => {
     if (e.target === previewModal) {
-      previewModal.classList.add("hidden");
-      if (currentPreviewUrl) {
-        revokeTemporaryAccess(currentFileId).catch((e) =>
-          console.error("Failed to revoke temporary access:", e)
-        );
-        currentPreviewUrl = null;
-      }
-      docPreviewIframe.src = "";
-      currentFileBlob = null;
-      printButton.classList.remove("hidden");
+      resetPreviewModal();
     }
   });
 
@@ -99,6 +91,87 @@ function setupEventListeners() {
   folderSearch.addEventListener("input", (e) =>
     filterFolders(e.target.value.toLowerCase())
   );
+}
+
+// Setup PIN input listeners
+function setupPinInputListeners() {
+  pinInputs.forEach((input, index) => {
+    input.addEventListener("input", (e) => {
+      const value = e.target.value;
+      if (value.length === 1 && index < 3) {
+        pinInputs[index + 1].focus();
+      }
+      incorrectPin.classList.add("hidden"); // Hide error when user starts typing again
+      checkPin();
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !input.value && index > 0) {
+        pinInputs[index - 1].focus();
+      }
+    });
+  });
+}
+
+// Check PIN entered by user
+function checkPin() {
+  const enteredPin = pinInputs.map((input) => input.value).join("");
+  if (enteredPin.length === 4) {
+    if (enteredPin === expectedPin) {
+      pinContainer.classList.add("hidden");
+      downloadButton.classList.remove("hidden");
+      printButton.classList.remove("hidden");
+      docPreviewIframe.classList.remove("hidden");
+      // Reset borders to default
+      pinInputs.forEach((input) => {
+        input.classList.remove("border-red-300");
+        input.classList.add("border-gray-300");
+      });
+    } else {
+      // Show incorrect PIN with red borders
+      incorrectPin.classList.remove("hidden");
+      pinInputs.forEach((input) => {
+        input.classList.remove("border-gray-300");
+        input.classList.add("border-red-300");
+      });
+      // Remove focus from the last input to prevent blue border
+      pinInputs[3].blur();
+      // After 0.5 seconds, hide error and reset inputs
+      setTimeout(() => {
+        incorrectPin.classList.add("hidden");
+        resetPinInputs();
+      }, 500);
+    }
+  }
+}
+
+// Reset PIN inputs
+function resetPinInputs() {
+  pinInputs.forEach((input) => {
+    input.value = "";
+    input.classList.remove("border-red-300");
+    input.classList.add("border-gray-300");
+  });
+  pinInputs[0].focus();
+}
+
+// Reset preview modal state
+function resetPreviewModal() {
+  previewModal.classList.add("hidden");
+  if (currentPreviewUrl) {
+    revokeTemporaryAccess(currentFileId).catch((e) =>
+      console.error("Failed to revoke temporary access:", e)
+    );
+    currentPreviewUrl = null;
+  }
+  docPreviewIframe.src = "";
+  currentFileBlob = null;
+  pinContainer.classList.add("hidden");
+  incorrectPin.classList.add("hidden");
+  downloadButton.classList.remove("hidden");
+  printButton.classList.remove("hidden");
+  resetPinInputs();
+  expectedPin = null;
 }
 
 // Setup daily cache clear interval
@@ -340,7 +413,7 @@ function updateBreadcrumb(courseName, subjectName = null) {
       <div class="flex">
         <label for="category-select" class="sr-only">Category</label>
         <div class="relative z-0">
-          <select id="category-select" class="cursor-pointer bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-s-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" style="border-top-left-radius: 25px; border-bottom-left-radius: 25px;">
+          <select id="category-select" class="cursor-pointer bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-s-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" style=" engineers=""border-top-left-radius: 25px; border-bottom-left-radius: 25px;">
             <option disabled value="">Select Category</option>
             <option class="cursor-pointer" value="Roll Number">Roll Number</option>
             <option class="cursor-pointer" value="File ID">File ID</option>
@@ -733,10 +806,16 @@ ${time}
   });
 }
 
-// Open file preview modal
+// Open file preview modal with PIN handling
 async function openFilePreview(file) {
   currentFileId = file.id;
-  previewFilename.textContent = file.name;
+  const fileName = file.name;
+  const pinMatch = fileName.match(/\[S\d+\]_(\d{4})/); // Extract PIN like "2905" from "24_EXP5_DAA [S2457]_2905"
+  expectedPin = pinMatch ? pinMatch[1] : null;
+  const displayName = expectedPin
+    ? fileName.replace(`_${expectedPin}`, "").trim()
+    : fileName; // Remove PIN from display name
+  previewFilename.textContent = displayName;
   previewModal.classList.remove("hidden");
   pdfContainer.classList.add("hidden");
   docxContainer.classList.add("hidden");
@@ -746,34 +825,72 @@ async function openFilePreview(file) {
   docPreviewIframe.src = "";
   currentFileBlob = null;
 
-  const fileExtension = file.name.split(".").pop().toLowerCase();
-  try {
-    if (fileCache[file.id]) {
-      currentFileBlob = fileCache[file.id].blob;
-      if (fileExtension === "pdf") {
-        printButton.classList.add("hidden");
-        docPreviewIframe.src = currentFileBlob;
-      } else if (fileExtension === "doc" || fileExtension === "docx") {
-        printButton.classList.remove("hidden");
-        docPreviewIframe.src = `https://docs.google.com/document/d/${file.id}/preview?tab=t.0`;
-      }
-      previewLoading.classList.add("hidden");
-      docPreviewIframe.classList.remove("hidden");
-    } else {
-      if (fileExtension === "pdf") {
-        printButton.classList.add("hidden");
-        await previewPdfFile(file);
-      } else if (fileExtension === "doc" || fileExtension === "docx") {
-        printButton.classList.remove("hidden");
-        await previewDocFile(file);
+  const fileExtension = fileName.split(".").pop().toLowerCase();
+
+  // Handle PIN protection
+  if (expectedPin) {
+    downloadButton.classList.add("hidden");
+    printButton.classList.add("hidden");
+    docPreviewIframe.classList.add("hidden");
+    pinContainer.classList.remove("hidden");
+    incorrectPin.classList.add("hidden");
+    resetPinInputs();
+    previewLoading.classList.add("hidden");
+
+    // Load preview but keep iframe hidden until PIN is correct
+    try {
+      if (fileCache[file.id]) {
+        currentFileBlob = fileCache[file.id].blob;
+        if (fileExtension === "pdf") {
+          docPreviewIframe.src = currentFileBlob;
+        } else if (fileExtension === "doc" || fileExtension === "docx") {
+          docPreviewIframe.src = `https://docs.google.com/document/d/${file.id}/preview?tab=t.0`;
+        }
       } else {
-        printButton.classList.remove("hidden");
-        showPreviewError("Unsupported file type");
+        if (fileExtension === "pdf") {
+          await previewPdfFile(file);
+        } else if (fileExtension === "doc" || fileExtension === "docx") {
+          await previewDocFile(file);
+        } else {
+          showPreviewError("Unsupported file type");
+          return;
+        }
       }
+    } catch (error) {
+      console.error("Error preparing file preview:", error);
+      showPreviewError("Error loading file");
     }
-  } catch (error) {
-    console.error("Error opening file preview:", error);
-    showPreviewError("Error loading file");
+  } else {
+    // No PIN required
+    pinContainer.classList.add("hidden");
+    try {
+      if (fileCache[file.id]) {
+        currentFileBlob = fileCache[file.id].blob;
+        if (fileExtension === "pdf") {
+          printButton.classList.add("hidden");
+          docPreviewIframe.src = currentFileBlob;
+        } else if (fileExtension === "doc" || fileExtension === "docx") {
+          printButton.classList.remove("hidden");
+          docPreviewIframe.src = `https://docs.google.com/document/d/${file.id}/preview?tab=t.0`;
+        }
+        previewLoading.classList.add("hidden");
+        docPreviewIframe.classList.remove("hidden");
+      } else {
+        if (fileExtension === "pdf") {
+          printButton.classList.add("hidden");
+          await previewPdfFile(file);
+        } else if (fileExtension === "doc" || fileExtension === "docx") {
+          printButton.classList.remove("hidden");
+          await previewDocFile(file);
+        } else {
+          printButton.classList.remove("hidden");
+          showPreviewError("Unsupported file type");
+        }
+      }
+    } catch (error) {
+      console.error("Error opening file preview:", error);
+      showPreviewError("Error loading file");
+    }
   }
 }
 
@@ -790,7 +907,7 @@ async function previewPdfFile(file) {
       "load",
       () => {
         previewLoading.classList.add("hidden");
-        docPreviewIframe.classList.remove("hidden");
+        if (!expectedPin) docPreviewIframe.classList.remove("hidden");
       },
       { once: true }
     );
@@ -813,7 +930,7 @@ async function previewDocFile(file) {
       "load",
       () => {
         previewLoading.classList.add("hidden");
-        docPreviewIframe.classList.remove("hidden");
+        if (!expectedPin) docPreviewIframe.classList.remove("hidden");
       },
       { once: true }
     );
