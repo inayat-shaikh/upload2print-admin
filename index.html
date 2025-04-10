@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Centralized Upload & Print System (CUPS)</title>
+    <title>Drive WhatsApp Viewer</title>
     <!-- Flowbite CSS CDN -->
     <!-- <link href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css" rel="stylesheet" /> -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -107,8 +107,8 @@
 
 <body class="bg-gray-100 h-screen flex flex-col">
     <!-- Header -->
-    <header class="bg-teal-700 text-white py-3 px-4">
-        <h1 class="text-xl font-semibold">Centralized Upload & Print System (CUPS)</h1>
+    <header class="bg-blue-700 text-white py-3 px-4">
+        <h1 class="text-xl font-semibold">Drive WhatsApp Viewer</h1>
     </header>
 
     <!-- Main container -->
@@ -191,7 +191,7 @@
             <div id="welcome-message" class="flex-1 flex items-center justify-center p-8 text-center text-gray-500">
                 <div>
                     <i class="fas fa-folder-open text-6xl mb-4"></i>
-                    <p class="text-xl mb-2">Welcome to Centralized Upload & Print System (CUPS)</p>
+                    <p class="text-xl mb-2">Welcome to Drive WhatsApp Viewer</p>
                     <p class="text-sm">Select a folder from the left to view its contents</p>
                 </div>
             </div>
@@ -297,6 +297,54 @@
                         <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-3"></i>
                         <p id="error-message" class="text-lg text-gray-800 mb-2">Unable to preview file</p>
                         <p class="text-sm text-gray-600">Try downloading the file instead</p>
+                    </div>
+                </div>
+                <div id="pin-container" class="hidden h-full flex items-center justify-center text-center">
+                    <div class="pin-input mb-5">
+                        <form id="pinForm" class="max-w-sm mx-auto">
+                            <span id="incorrect-pin"
+                                class="hidden mb-4 inline-flex items-center bg-red-100 text-red-800 text-sm font-medium px-2 py-1 rounded-full dark:bg-red-900 dark:text-red-300">
+                                <svg class="me-1 w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                    fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                        d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />
+                                </svg>
+                                <span class="sr-only">Error icon</span>Please Enter Correct Pin
+                            </span>
+                            <div class="flex mb-2 space-x-4 rtl:space-x-reverse">
+                                <div>
+                                    <label for="code-1" class="sr-only">First code</label>
+                                    <input type="text" maxlength="1" data-focus-input-init
+                                        data-focus-input-next="code-2" id="code-1"
+                                        class="block w-14 h-14 py-3 text-2xl font-extrabold text-center text-gray-900 bg-white border-2 border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                        required />
+                                </div>
+                                <div>
+                                    <label for="code-2" class="sr-only">Second code</label>
+                                    <input type="text" maxlength="1" data-focus-input-init
+                                        data-focus-input-prev="code-1" data-focus-input-next="code-3" id="code-2"
+                                        class="block w-14 h-14 py-3 text-2xl font-extrabold text-center text-gray-900 bg-white border-2 border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                        required />
+                                </div>
+                                <div>
+                                    <label for="code-3" class="sr-only">Third code</label>
+                                    <input type="text" maxlength="1" data-focus-input-init
+                                        data-focus-input-prev="code-2" data-focus-input-next="code-4" id="code-3"
+                                        class="block w-14 h-14 py-3 text-2xl font-extrabold text-center text-gray-900 bg-white border-2 border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                        required />
+                                </div>
+                                <div>
+                                    <label for="code-4" class="sr-only">Fourth code</label>
+                                    <input type="text" maxlength="1" data-focus-input-init
+                                        data-focus-input-prev="code-3" id="code-4"
+                                        class="block w-14 h-14 py-3 text-2xl font-extrabold text-center text-gray-900 bg-white border-2 border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                        required />
+                                </div>
+                            </div>
+                            <p id="helper-text-explanation" class="mt-2 text-lg text-gray-500 dark:text-gray-400">
+                                Enter Your 4 digit PIN
+                            </p>
+                        </form>
                     </div>
                 </div>
                 <div id="pdf-container" class="hidden h-full"></div>
