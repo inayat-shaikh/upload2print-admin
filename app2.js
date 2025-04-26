@@ -707,7 +707,7 @@ function renderFiles(files) {
     const fileType = file.fileType || "Unknown";
 
     const pdfIcon = `
-      <svg fill="none" aria-hidden="true" class="w-5 h-5 shrink-0" viewBox="0 0 20 21">
+      <svg fill="none" aria-hidden="true" class="w-5 h-5 shrink-0" viewBox="0 0 20 21" style="width: 22px;height: 22px;">
         <g clip-path="url(#clip0_3173_1381)">
           <path fill="#E2E5E7" d="M5.024.5c-.688 0-1.25.563-1.25 1.25v17.5c0 .688.562 1.25 1.25 1.25h12.5c.687 0 1.25-.563 1.25-1.25V5.5l-5-5h-8.75z"></path>
           <path fill="#B0B7BD" d="M15.024 5.5h3.75l-5-5v3.75c0 .688.562 1.25 1.25 1.25z"></path>
@@ -723,113 +723,8 @@ function renderFiles(files) {
         </defs>
       </svg>
     `;
-    const docIcon = `
-      <svg version="1.1" id="Livello_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512" xml:space="preserve" class="w-5 h-5 shrink-0">
-        <style type="text/css">.st0{fill:#41A5EE;} .st1{fill:#2B7CD3;} .st2{fill:#185ABD;} .st3{fill:#103F91;} .st4{opacity:0.1;enable-background:new;} .st5{opacity:0.2;enable-background:new;} .st6{fill:url(#SVGID_1_);} .st7{fill:#FFFFFF;}</style>
-        <path class="st0" d="M490.17,19.2H140.9c-12.05,0-21.83,9.72-21.83,21.7l0,0v96.7l202.42,59.2L512,137.6V40.9C512,28.91,502.23,19.2,490.17,19.2z"/>
-        <path class="st1" d="M512,137.6H119.07V256l202.42,35.52L512,256V137.6z"/>
-        <path class="st2" d="M119.07,256v118.4l190.51,23.68L512,374.4V256H119.07z"/>
-        <path class="st3" d="M140.9,492.8h349.28c12.05,0,21.83-9.72,21.83-21.7l0,0v-96.7H119.07v96.7C119.07,483.09,128.84,492.8,140.9,492.8z"/>
-        <path class="st4" d="M263.94,113.92H119.07v296h144.87c12.04-0.04,21.79-9.73,21.83-21.7v-252.6C285.73,123.65,275.98,113.96,263.94,113.92z"/>
-        <path class="st5" d="M252.04,125.76H119.07v296h132.97c12.04-0.04,21.79-9.73,21.83-21.7v-252.6C273.82,135.49,264.07,125.8,252.04,125.76z"/>
-        <path class="st5" d="M252.04,125.76H119.07v272.32h132.97c12.04-0.04,21.79-9.73,21.83-21.7V147.46C273.82,135.49,264.07,125.8,252.04,125.76z"/>
-        <path class="st5" d="M240.13,125.76H119.07v272.32h121.06c12.04-0.04,21.79-9.73,21.83-21.7V147.46C261.91,135.49,252.17,125.8,240.13,125.76z"/>
-        <linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="45.8183" y1="-1083.4916" x2="216.1361" y2="-788.5082" gradientTransform="matrix(1 0 0 1 0 1192)">
-          <stop offset="0" style="stop-color:#2368C4"/>
-          <stop offset="0.5" style="stop-color:#1A5DBE"/>
-          <stop offset="1" style="stop-color:#1146AC"/>
-        </linearGradient>
-        <path class="st6" d="M21.83,125.76h218.3c12.05,0,21.83,9.72,21.83,21.7v217.08c0,11.99-9.77,21.7-21.83,21.7H21.83C9.77,386.24,0,376.52,0,364.54V147.46C0,135.48,9.77,125.76,21.83,125.76z"/>
-        <path class="st7" d="M89.56,292.21c0.43,3.35,0.71,6.26,0.85,8.76h0.5c0.19-2.37,0.59-5.22,1.19-8.56c0.6-3.34,1.15-6.16,1.63-8.47l22.96-98.49h29.68l23.81,97.01c1.38,6.03,2.37,12.15,2.96,18.3h0.39c0.44-5.97,1.27-11.9,2.48-17.76l18.99-97.6h27.02l-33.36,141.13H157.1l-22.62-93.47c-0.65-2.69-1.4-6.2-2.23-10.53s-1.33-7.48-1.54-9.47h-0.39c-0.26,2.3-0.77,5.71-1.54,10.23c-0.76,4.52-1.37,7.87-1.83,10.04l-21.27,93.17h-32.1L40.04,185.46h27.5l20.68,98.69C88.7,286.17,89.14,288.87,89.56,292.21z"/>
-      </svg>
-    `;
-    const googleDocIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20px" height="20px" viewBox="0 0 47 65" version="1.1" class="w-5 h-5 shrink-0">
-        <defs>
-          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-1"/>
-          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-3"/>
-          <linearGradient x1="50.0053945%" y1="8.58610612%" x2="50.0053945%" y2="100.013939%" id="linearGradient-5">
-            <stop stop-color="#1A237E" stop-opacity="0.2" offset="0%"/>
-            <stop stop-color="#1A237E" stop-opacity="0.02" offset="100%"/>
-          </linearGradient>
-          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-6"/>
-          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-8"/>
-          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-10"/>
-          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-12"/>
-          <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="path-14"/>
-          <radialGradient cx="3.16804688%" cy="2.71744318%" fx="3.16804688%" fy="2.71744318%" r="161.248516%" gradientTransform="translate(0.031680,0.027174),scale(1.000000,0.723077),translate(-0.031680,-0.027174)" id="radialGradient-16">
-            <stop stop-color="#FFFFFF" stop-opacity="0.1" offset="0%"/>
-            <stop stop-color="#FFFFFF" stop-opacity="0" offset="100%"/>
-          </radialGradient>
-        </defs>
-        <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-          <g id="Consumer-Apps-Docs-Large-VD-R8" transform="translate(-451.000000, -463.000000)">
-            <g id="Hero" transform="translate(0.000000, 63.000000)">
-              <g id="Personal" transform="translate(277.000000, 309.000000)">
-                <g id="Docs-icon" transform="translate(174.000000, 91.000000)">
-                  <g id="Group">
-                    <g id="Clipped">
-                      <mask id="mask-2" fill="white">
-                        <use xlink:href="#path-1"/>
-                      </mask>
-                      <g id="SVGID_1_"/>
-                      <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L36.71875,10.3409091 L29.375,0 Z" id="Path" fill="#4285F4" fill-rule="nonzero" mask="url(#mask-2)"/>
-                    </g>
-                    <g id="Clipped">
-                      <mask id="mask-4" fill="white">
-                        <use xlink:href="#path-3"/>
-                      </mask>
-                      <g id="SVGID_1_"/>
-                      <polygon id="Path" fill="url(#linearGradient-5)" fill-rule="nonzero" mask="url(#mask-4)" points="30.6638281 16.4309659 47 32.8582386 47 17.7272727"/>
-                    </g>
-                    <g id="Clipped">
-                      <mask id="mask-7" fill="white">
-                        <use xlink:href="#path-6"/>
-                      </mask>
-                      <g id="SVGID_1_"/>
-                      <path d="M11.75,47.2727273 L35.25,47.2727273 L35.25,44.3181818 L11.75,44.3181818 L11.75,47.2727273 Z M11.75,53.1818182 L29.375,53.1818182 L29.375,50.2272727 L11.75,50.2272727 L11.75,53.1818182 Z M11.75,32.5 L11.75,35.4545455 L35.25,35.4545455 L35.25,32.5 L11.75,32.5 Z M11.75,41.3636364 L35.25,41.3636364 L35.25,38.4090909 L11.75,38.4090909 L11.75,41.3636364 Z" id="Shape" fill="#F1F1F1" fill-rule="nonzero" mask="url(#mask-7)"/>
-                    </g>
-                    <g id="Clipped">
-                      <mask id="mask-9" fill="white">
-                        <use xlink:href="#path-8"/>
-                      </mask>
-                      <g id="SVGID_1_"/>
-                      <g id="Group" mask="url(#mask-9)">
-                        <g transform="translate(26.437500, -2.954545)">
-                          <path d="M2.9375,2.95454545 L2.9375,16.25 C2.9375,18.6985795 4.90929688,20.6818182 7.34375,20.6818182 L20.5625,20.6818182 L2.9375,2.95454545 Z" id="Path" fill="#A1C2FA" fill-rule="nonzero"/>
-                        </g>
-                      </g>
-                    </g>
-                    <g id="Clipped">
-                      <mask id="mask-11" fill="white">
-                        <use xlink:href="#path-10"/>
-                      </mask>
-                      <g id="SVGID_1_"/>
-                      <path d="M4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,4.80113636 C0,2.36363636 1.9828125,0.369318182 4.40625,0.369318182 L29.375,0.369318182 L29.375,0 L4.40625,0 Z" id="Path" fill-opacity="0.2" fill="#FFFFFF" fill-rule="nonzero" mask="url(#mask-11)"/>
-                    </g>
-                    <g id="Clipped">
-                      <mask id="mask-13" fill="white">
-                        <use xlink:href="#path-12"/>
-                      </mask>
-                      <g id="SVGID_1_"/>
-                      <path d="M42.59375,64.6306818 L4.40625,64.6306818 C1.9828125,64.6306818 0,62.6363636 0,60.1988636 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,60.1988636 C47,62.6363636 45.0171875,64.6306818 42.59375,64.6306818 Z" id="Path" fill-opacity="0.2" fill="#1A237E" fill-rule="nonzero" mask="url(#mask-13)"/>
-                    </g>
-                    <g id="Clipped">
-                      <mask id="mask-15" fill="white">
-                        <use xlink:href="#path-14"/>
-                      </mask>
-                      <g id="SVGID_1_"/>
-                      <path d="M33.78125,17.7272727 C31.3467969,17.7272727 29.375,15.7440341 29.375,13.2954545 L29.375,13.6647727 C29.375,16.1133523 31.3467969,18.0965909 33.78125,18.0965909 L47,18.0965909 L47,17.7272727 L33.78125,17.7272727 Z" id="Path" fill-opacity="0.1" fill="#1A237E" fill-rule="nonzero" mask="url(#mask-15)"/>
-                    </g>
-                  </g>
-                  <path d="M29.375,0 L4.40625,0 C1.9828125,0 0,1.99431818 0,4.43181818 L0,60.5681818 C0,63.0056818 1.9828125,65 4.40625,65 L42.59375,65 C45.0171875,65 47,63.0056818 47,60.5681818 L47,17.7272727 L29.375,0 Z" id="Path" fill="url(#radialGradient-16)" fill-rule="nonzero"/>
-                </g>
-              </g>
-            </g>
-          </g>
-        </g>
-      </svg>
-    `;
+    const docIcon = `<img src="./MsWord_SVG.svg" class="w-5 h-5 shrink-0" alt="Document Icon" />`;
+    const googleDocIcon = `<img src="./GoogleDoc_SVG.svg" class="w-5 h-5 shrink-0" alt="Document Icon" style="width: 22px;height: 22px;"/>`;
 
     // Check if the file has a Google Doc ID in its name
     const hasGoogleDocId = file.name.includes("{") && file.name.includes("}");
