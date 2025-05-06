@@ -926,9 +926,9 @@ async function openFilePreview(file) {
           docPreviewIframe.src = currentFileBlob;
           if (isMobile) previewError.classList.remove("hidden");
         } else if (fileExtension === "doc" || fileExtension === "docx") {
-          docPreviewIframe.src = isMobile
-            ? `https://docs.google.com/document/d/${googleDocId || file.id}/print`
-            : `https://docs.google.com/document/d/${googleDocId || file.id}/preview?tab=t.0`;
+          docPreviewIframe.src = `https://docs.google.com/document/d/${
+            googleDocId || file.id
+          }/preview?tab=t.0${isMobile ? "&mobilebasic=0" : ""}`;
         }
       } else {
         if (fileExtension === "pdf") {
@@ -956,9 +956,9 @@ async function openFilePreview(file) {
           if (isMobile) previewError.classList.remove("hidden");
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           printButton.classList.remove("hidden");
-          docPreviewIframe.src = isMobile
-            ? `https://docs.google.com/document/d/${googleDocId || file.id}/print`
-            : `https://docs.google.com/document/d/${googleDocId || file.id}/preview?tab=t.0`;
+          docPreviewIframe.src = `https://docs.google.com/document/d/${
+            googleDocId || file.id
+          }/preview?tab=t.0${isMobile ? "&mobilebasic=0" : ""}`;
         }
         previewLoading.classList.add("hidden");
         docPreviewIframe.classList.remove("hidden");
@@ -979,32 +979,6 @@ async function openFilePreview(file) {
       console.error("Error opening file preview:", error);
       showPreviewError("Error loading file");
     }
-  }
-}
-
-async function previewDocFile(file, googleDocId = null, isMobile = false) {
-  try {
-    const docId = googleDocId || file.id;
-    docPreviewIframe.src = isMobile
-      ? `https://docs.google.com/document/d/${docId}/print`
-      : `https://docs.google.com/document/d/${docId}/preview?tab=t.0`;
-    fileCache[file.id] = {
-      blob: docPreviewIframe.src,
-      mimeType: file.mimeType,
-    };
-    console.log(`${file.name} cached`);
-    docPreviewIframe.addEventListener(
-      "load",
-      () => {
-        previewLoading.classList.add("hidden");
-        if (!expectedPin) docPreviewIframe.classList.remove("hidden");
-      },
-     myriad (https://myriadapp.io/) also offers a similar service, but it is not free.
-      { once: true }
-    );
-  } catch (error) {
-    console.error("Error previewing DOC file:", error);
-    showPreviewError("Error loading document");
   }
 }
 
