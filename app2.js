@@ -51,6 +51,7 @@ let currentCourse = null;
 let cacheTimestamp = new Date().toDateString();
 let pollingIntervalId = null;
 let expectedPin = null; // To store the PIN extracted from filename
+let currentGoogleDocId = null; // To store the Google Doc ID extracted from filename
 
 // Initialize the application
 document.addEventListener("DOMContentLoaded", () => {
@@ -369,7 +370,7 @@ async function selectFolder(folderId, folderName, isSubject) {
   }
 }
 
-//Breadcrumb and the search bar
+// Breadcrumb and the search bar
 function updateBreadcrumb(courseName, subjectName = null) {
   const breadcrumbList = document.getElementById("breadcrumb-list");
   const searchBarContainer = document.getElementById("search-bar");
@@ -721,7 +722,7 @@ async function updateFiles(folderId) {
   }
 }
 
-//Render files as chat bubble
+// Render files as chat bubble
 function renderFiles(files) {
   contentList.classList.add("pl-4");
 
@@ -871,10 +872,6 @@ ${time}
 }
 
 // Open file preview modal with PIN handling
-// State (add this line near the top with other global variables)
-let currentGoogleDocId = null; // To store the Google Doc ID extracted from filename
-
-// Open file preview modal with PIN handling
 async function openFilePreview(file) {
   currentFileId = file.id;
   const fileName = file.name;
@@ -888,12 +885,12 @@ async function openFilePreview(file) {
 
   if (match) {
     const [, rollNumber, experiment, fileId, pin, docId, extension] = match;
-    expectedPin = pin || null;
-    googleDocId = docId || null;
-    currentGoogleDocId = googleDocId;
-    displayName = `${rollNumber}_${experiment} [${fileId}].${extension}`;
+    expectedPin = pin || null; // PIN like "2905" or null if not present
+    googleDocId = docId || null; // Google Doc ID like "1H48XJ0dwG80RShyLxMS8WNXlKaYyF4WyEA9b_P1l9EQ"
+    currentGoogleDocId = googleDocId; // Store globally for print/download
+    displayName = `${rollNumber}_${experiment} [${fileId}].${extension}`; // e.g., "24_EXP3_IAI [S3354].doc"
   } else {
-    currentGoogleDocId = null;
+    currentGoogleDocId = null; // Reset if no match
   }
 
   previewFilename.textContent = displayName;
@@ -907,7 +904,6 @@ async function openFilePreview(file) {
   currentFileBlob = null;
 
   const fileExtension = fileName.split(".").pop().toLowerCase();
-  const isMobile = window.innerWidth < 768;
 
   // Handle PIN protection
   if (expectedPin) {
@@ -919,23 +915,22 @@ async function openFilePreview(file) {
     resetPinInputs();
     previewLoading.classList.add("hidden");
 
+    // Load preview but keep iframe hidden until PIN is correct
     try {
       if (fileCache[file.id]) {
         currentFileBlob = fileCache[file.id].blob;
         if (fileExtension === "pdf") {
           docPreviewIframe.src = currentFileBlob;
-          if (isMobile) previewError.classList.remove("hidden");
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           docPreviewIframe.src = `https://docs.google.com/document/d/${
             googleDocId || file.id
-          }/preview?tab=t.0${isMobile ? "&mobilebasic=0" : ""}`;
+          }/preview?tab=t.0`;
         }
       } else {
         if (fileExtension === "pdf") {
           await previewPdfFile(file);
-          if (isMobile) previewError.classList.remove("hidden");
         } else if (fileExtension === "doc" || fileExtension === "docx") {
-          await previewDocFile(file, googleDocId, isMobile);
+          await previewDocFile(file, googleDocId);
         } else {
           showPreviewError("Unsupported file type");
           return;
@@ -946,6 +941,7 @@ async function openFilePreview(file) {
       showPreviewError("Error loading file");
     }
   } else {
+    // No PIN required
     pinContainer.classList.add("hidden");
     try {
       if (fileCache[file.id]) {
@@ -953,12 +949,11 @@ async function openFilePreview(file) {
         if (fileExtension === "pdf") {
           printButton.classList.add("hidden");
           docPreviewIframe.src = currentFileBlob;
-          if (isMobile) previewError.classList.remove("hidden");
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           printButton.classList.remove("hidden");
           docPreviewIframe.src = `https://docs.google.com/document/d/${
             googleDocId || file.id
-          }/preview?tab=t.0${isMobile ? "&mobilebasic=0" : ""}`;
+          }/preview?tab=t.0`;
         }
         previewLoading.classList.add("hidden");
         docPreviewIframe.classList.remove("hidden");
@@ -966,10 +961,9 @@ async function openFilePreview(file) {
         if (fileExtension === "pdf") {
           printButton.classList.add("hidden");
           await previewPdfFile(file);
-          if (isMobile) previewError.classList.remove("hidden");
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           printButton.classList.remove("hidden");
-          await previewDocFile(file, googleDocId, isMobile);
+          await previewDocFile(file, googleDocId);
         } else {
           printButton.classList.remove("hidden");
           showPreviewError("Unsupported file type");
@@ -982,11 +976,12 @@ async function openFilePreview(file) {
   }
 }
 
+// Preview DOC/DOCX file using Google Docs preview
 async function previewDocFile(file, googleDocId = null, isMobile = false) {
   try {
     const docId = googleDocId || file.id;
     docPreviewIframe.src = `https://docs.google.com/document/d/${docId}/preview?tab=t.0${
-      isMobile ? "&mobilebasic=0" : ""
+      isMobile ? "&mobilebasic=0&hl=en" : ""
     }`;
     fileCache[file.id] = {
       blob: docPreviewIframe.src,
@@ -998,6 +993,12 @@ async function previewDocFile(file, googleDocId = null, isMobile = false) {
       () => {
         previewLoading.classList.add("hidden");
         if (!expectedPin) docPreviewIframe.classList.remove("hidden");
+        // Check if mobilebasic redirect occurred
+        if (isMobile && docPreviewIframe.src.includes("mobilebasic")) {
+          showPreviewError(
+            "Mobile view loaded. Try viewing on a larger screen or downloading the file."
+          );
+        }
       },
       { once: true }
     );
@@ -1027,30 +1028,6 @@ async function previewPdfFile(file) {
   } catch (error) {
     console.error("Error previewing PDF:", error);
     showPreviewError("Error loading PDF");
-  }
-}
-
-// Preview DOC/DOCX file using Google Docs preview
-async function previewDocFile(file, googleDocId = null) {
-  try {
-    const docId = googleDocId || file.id; // Use Google Doc ID from filename if available, otherwise fallback to file.id
-    docPreviewIframe.src = `https://docs.google.com/document/d/${docId}/preview?tab=t.0`;
-    fileCache[file.id] = {
-      blob: docPreviewIframe.src,
-      mimeType: file.mimeType,
-    };
-    console.log(`${file.name} cached`);
-    docPreviewIframe.addEventListener(
-      "load",
-      () => {
-        previewLoading.classList.add("hidden");
-        if (!expectedPin) docPreviewIframe.classList.remove("hidden");
-      },
-      { once: true }
-    );
-  } catch (error) {
-    console.error("Error previewing DOC file:", error);
-    showPreviewError("Error loading document");
   }
 }
 
