@@ -238,12 +238,28 @@
         <div class="right-pane md:w-2/3 bg-gray-100 flex flex-col">
             <!-- Subject header with Flowbite breadcrumb -->
             <div id="subject-header" class="hidden bg-gray-200 p-3 border-b border-gray-300">
-                <nav class="flex" aria-label="Breadcrumb">
-                    <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse"
-                        id="breadcrumb-list">
-                        <!-- Breadcrumb items will be populated dynamically -->
-                    </ol>
-                </nav>
+                <div class="flex items-center justify-between">
+                    <!-- Breadcrumb navigation -->
+                    <nav class="flex flex-wrap" aria-label="Breadcrumb">
+                        <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse flex-wrap"
+                            id="breadcrumb-list">
+                            <!-- Breadcrumb items will be populated dynamically -->
+                        </ol>
+                    </nav>
+                    <!-- Search icon (visible on mobile) -->
+                    <button id="search-toggle" class="search-toggle md:hidden p-2 text-blue-600">
+                        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 20 20">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                        </svg>
+                        <span class="sr-only">Toggle Search</span>
+                    </button>
+                </div>
+                <!-- Search bar (hidden on mobile by default, always visible on larger screens) -->
+                <div id="search-bar" class="hidden md:block mt-2 md:mt-0">
+                    <!-- Search bar will be populated dynamically -->
+                </div>
             </div>
             <!-- Welcome message (initial state) -->
             <div id="welcome-message" class="flex-1 flex items-center justify-center p-8 text-center text-gray-500">
