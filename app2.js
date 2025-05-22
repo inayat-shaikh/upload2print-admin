@@ -117,12 +117,32 @@ function setupPinInputListeners() {
 // Check PIN entered by user
 function checkPin() {
   const enteredPin = pinInputs.map((input) => input.value).join("");
+  const isSmallScreen = window.innerWidth < 768;
+  const fileExtension = previewFilename.textContent
+    .split(".")
+    .pop()
+    .toLowerCase();
+
   if (enteredPin.length === 4) {
     if (enteredPin === expectedPin) {
       pinContainer.classList.add("hidden");
       downloadButton.classList.remove("hidden");
       printButton.classList.remove("hidden");
-      docPreviewIframe.classList.remove("hidden");
+      if (
+        !isSmallScreen ||
+        (fileExtension !== "doc" && fileExtension !== "docx")
+      ) {
+        docPreviewIframe.classList.remove("hidden");
+      } else if (
+        isSmallScreen &&
+        (fileExtension === "doc" || fileExtension === "docx")
+      ) {
+        previewError.classList.remove("hidden");
+        errorMessage.innerHTML =
+          'File preview not available on mobile. Use the <svg class="inline-block w-5 h-5 text-gray-800 group-hover:text-blue-700 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"> <path fill-rule="evenodd" d="M8 3a2 2 0 0 0-2 2v3h12V5a2 2 0 0 0-2-2H8Zm-3 7a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1v-4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5Zm4 11a1 1 0 0 1-1-1v-4h8v4a1 1 0 0 1-1 1H9Z" clip-rule="evenodd"></path> </svg> button to preview the file.';
+        docPreviewIframe.classList.add("hidden");
+        printButton.click(); // Auto-trigger print after PIN validation
+      }
       // Reset borders to default
       pinInputs.forEach((input) => {
         input.classList.remove("border-red-300");
@@ -885,12 +905,12 @@ async function openFilePreview(file) {
 
   if (match) {
     const [, rollNumber, experiment, fileId, pin, docId, extension] = match;
-    expectedPin = pin || null; // PIN like "2905" or null if not present
-    googleDocId = docId || null; // Google Doc ID like "1H48XJ0dwG80RShyLxMS8WNXlKaYyF4WyEA9b_P1l9EQ"
-    currentGoogleDocId = googleDocId; // Store globally for print/download
-    displayName = `${rollNumber}_${experiment} [${fileId}].${extension}`; // e.g., "24_EXP3_IAI [S3354].doc"
+    expectedPin = pin || null;
+    googleDocId = docId || null;
+    currentGoogleDocId = googleDocId;
+    displayName = `${rollNumber}_${experiment} [${fileId}].${extension}`;
   } else {
-    currentGoogleDocId = null; // Reset if no match
+    currentGoogleDocId = null;
   }
 
   previewFilename.textContent = displayName;
@@ -904,6 +924,7 @@ async function openFilePreview(file) {
   currentFileBlob = null;
 
   const fileExtension = fileName.split(".").pop().toLowerCase();
+  const isSmallScreen = window.innerWidth < 768;
 
   // Handle PIN protection
   if (expectedPin) {
@@ -924,13 +945,13 @@ async function openFilePreview(file) {
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           docPreviewIframe.src = `https://docs.google.com/document/d/${
             googleDocId || file.id
-          }/preview?tab=t.0`;
+          }/preview?tab=t.0${isSmallScreen ? "&mobilebasic=0&hl=en" : ""}`;
         }
       } else {
         if (fileExtension === "pdf") {
           await previewPdfFile(file);
         } else if (fileExtension === "doc" || fileExtension === "docx") {
-          await previewDocFile(file, googleDocId);
+          await previewDocFile(file, googleDocId, isSmallScreen);
         } else {
           showPreviewError("Unsupported file type");
           return;
@@ -949,21 +970,41 @@ async function openFilePreview(file) {
         if (fileExtension === "pdf") {
           printButton.classList.add("hidden");
           docPreviewIframe.src = currentFileBlob;
+          previewLoading.classList.add("hidden");
+          docPreviewIframe.classList.remove("hidden");
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           printButton.classList.remove("hidden");
-          docPreviewIframe.src = `https://docs.google.com/document/d/${
-            googleDocId || file.id
-          }/preview?tab=t.0`;
+          if (isSmallScreen) {
+            previewLoading.classList.add("hidden");
+            previewError.classList.remove("hidden");
+            errorMessage.innerHTML =
+              'File preview not available on mobile. Use the <svg class="inline-block w-5 h-5 text-gray-800 group-hover:text-blue-700 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"> <path fill-rule="evenodd" d="M8 3a2 2 0 0 0-2 2v3h12V5a2 2 0 0 0-2-2H8Zm-3 7a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1v-4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5Zm4 11a1 1 0 0 1-1-1v-4h8v4a1 1 0 0 1-1 1H9Z" clip-rule="evenodd"></path> </svg> button to preview the file.';
+            docPreviewIframe.classList.add("hidden");
+            printButton.click(); // Auto-trigger print
+          } else {
+            docPreviewIframe.src = `https://docs.google.com/document/d/${
+              googleDocId || file.id
+            }/preview?tab=t.0`;
+            previewLoading.classList.add("hidden");
+            docPreviewIframe.classList.remove("hidden");
+          }
         }
-        previewLoading.classList.add("hidden");
-        docPreviewIframe.classList.remove("hidden");
       } else {
         if (fileExtension === "pdf") {
           printButton.classList.add("hidden");
           await previewPdfFile(file);
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           printButton.classList.remove("hidden");
-          await previewDocFile(file, googleDocId);
+          if (isSmallScreen) {
+            previewLoading.classList.add("hidden");
+            previewError.classList.remove("hidden");
+            errorMessage.innerHTML =
+              'File preview not available on mobile. Use the <svg class="inline-block w-5 h-5 text-gray-800 group-hover:text-blue-700 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"> <path fill-rule="evenodd" d="M8 3a2 2 0 0 0-2 2v3h12V5a2 2 0 0 0-2-2H8Zm-3 7a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1v-4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5Zm4 11a1 1 0 0 1-1-1v-4h8v4a1 1 0 0 1-1 1H9Z" clip-rule="evenodd"></path> </svg> button to preview the file.';
+            docPreviewIframe.classList.add("hidden");
+            printButton.click(); // Auto-trigger print
+          } else {
+            await previewDocFile(file, googleDocId);
+          }
         } else {
           printButton.classList.remove("hidden");
           showPreviewError("Unsupported file type");
@@ -992,12 +1033,14 @@ async function previewDocFile(file, googleDocId = null, isMobile = false) {
       "load",
       () => {
         previewLoading.classList.add("hidden");
-        if (!expectedPin) docPreviewIframe.classList.remove("hidden");
-        // Check if mobilebasic redirect occurred
-        if (isMobile && docPreviewIframe.src.includes("mobilebasic")) {
-          showPreviewError(
-            "Mobile view loaded. Try viewing on a larger screen or downloading the file."
-          );
+        if (!expectedPin && !isMobile) {
+          docPreviewIframe.classList.remove("hidden");
+        } else if (isMobile && !expectedPin) {
+          previewError.classList.remove("hidden");
+          errorMessage.innerHTML =
+            'File preview not available on mobile. Use the <svg class="inline-block w-5 h-5 text-gray-800 group-hover:text-blue-700 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"> <path fill-rule="evenodd" d="M8 3a2 2 0 0 0-2 2v3h12V5a2 2 0 0 0-2-2H8Zm-3 7a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1v-4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5Zm4 11a1 1 0 0 1-1-1v-4h8v4a1 1 0 0 1-1 1H9Z" clip-rule="evenodd"></path> </svg> button to preview the file.';
+          docPreviewIframe.classList.add("hidden");
+          printButton.click(); // Auto-trigger print only if no PIN
         }
       },
       { once: true }
