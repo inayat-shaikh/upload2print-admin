@@ -128,21 +128,59 @@ function checkPin() {
       pinContainer.classList.add("hidden");
       downloadButton.classList.remove("hidden");
       printButton.classList.remove("hidden");
-      if (
-        !isSmallScreen ||
-        (fileExtension !== "doc" && fileExtension !== "docx")
-      ) {
-        docPreviewIframe.classList.remove("hidden");
-      } else if (
-        isSmallScreen &&
-        (fileExtension === "doc" || fileExtension === "docx")
-      ) {
-        previewError.classList.remove("hidden");
-        errorMessage.innerHTML =
-          'File preview not available on mobile. Use the <svg class="inline-block w-5 h-5 text-gray-800 group-hover:text-blue-700 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"> <path fill-rule="evenodd" d="M8 3a2 2 0 0 0-2 2v3h12V5a2 2 0 0 0-2-2H8Zm-3 7a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1v-4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5Zm4 11a1 1 0 0 1-1-1v-4h8v4a1 1 0 0 1-1 1H9Z" clip-rule="evenodd"></path> </svg> button to preview the file.';
-        docPreviewIframe.classList.add("hidden");
-        printButton.click(); // Auto-trigger print after PIN validation
+
+      // Set iframe src based on screen size and file type after PIN validation
+      if (fileExtension === "pdf") {
+        if (isSmallScreen) {
+          docPreviewIframe.src = `https://drive.google.com/file/d/${currentFileId}/preview`;
+          // Modify div inside iframe
+          docPreviewIframe.addEventListener(
+            "load",
+            () => {
+              try {
+                const iframeDoc =
+                  docPreviewIframe.contentDocument ||
+                  docPreviewIframe.contentWindow.document;
+                let targetDiv = iframeDoc.querySelector(
+                  ".ndfHFb-c4YZDc-Wrql6b.ndfHFb-c4YZDc-N4imRe-NMrWyd-RCfa3e"
+                );
+                if (!targetDiv) {
+                  const divs = iframeDoc.querySelectorAll("div");
+                  targetDiv = Array.from(divs).find(
+                    (div) =>
+                      div.style.width === "40px" && div.style.right === "12px"
+                  );
+                }
+                if (targetDiv) {
+                  targetDiv.style.width = "0px";
+                  targetDiv.style.right = "0px";
+                }
+              } catch (e) {
+                console.error("Error modifying iframe div:", e);
+              }
+              docPreviewIframe.classList.remove("hidden");
+            },
+            { once: true }
+          );
+        } else {
+          docPreviewIframe.src = currentFileBlob;
+          docPreviewIframe.classList.remove("hidden");
+        }
+      } else if (fileExtension === "doc" || fileExtension === "docx") {
+        if (isSmallScreen) {
+          previewError.classList.remove("hidden");
+          errorMessage.innerHTML =
+            'File preview not available on mobile. Use the <svg class="inline-block w-5 h-5 text-gray-800 group-hover:text-blue-700 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"> <path fill-rule="evenodd" d="M8 3a2 2 0 0 0-2 2v3h12V5a2 2 0 0 0-2-2H8Zm-3 7a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1v-4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5Zm4 11a1 1 0 0 1-1-1v-4h8v4a1 1 0 0 1-1 1H9Z" clip-rule="evenodd"></path> </svg> button to preview the file.';
+          docPreviewIframe.classList.add("hidden");
+          printButton.click(); // Auto-trigger print after PIN validation
+        } else {
+          docPreviewIframe.src = `https://docs.google.com/document/d/${
+            currentGoogleDocId || currentFileId
+          }/preview?tab=t.0`;
+          docPreviewIframe.classList.remove("hidden");
+        }
       }
+
       // Reset borders to default
       pinInputs.forEach((input) => {
         input.classList.remove("border-red-300");
@@ -940,18 +978,26 @@ async function openFilePreview(file) {
     try {
       if (fileCache[file.id]) {
         currentFileBlob = fileCache[file.id].blob;
-        if (fileExtension === "pdf") {
-          docPreviewIframe.src = currentFileBlob;
-        } else if (fileExtension === "doc" || fileExtension === "docx") {
-          docPreviewIframe.src = `https://docs.google.com/document/d/${
-            googleDocId || file.id
-          }/preview?tab=t.0${isSmallScreen ? "&mobilebasic=0&hl=en" : ""}`;
-        }
+        // Defer setting iframe src until PIN is validated in checkPin()
       } else {
         if (fileExtension === "pdf") {
-          await previewPdfFile(file);
+          const fileContent = await fetchFileContent(file.id);
+          if (!fileContent) throw new Error("Failed to fetch file content");
+          currentFileBlob = `data:application/pdf;base64,${fileContent}`;
+          fileCache[file.id] = {
+            blob: currentFileBlob,
+            mimeType: "application/pdf",
+          };
+          console.log(`${file.name} cached`);
         } else if (fileExtension === "doc" || fileExtension === "docx") {
-          await previewDocFile(file, googleDocId, isSmallScreen);
+          // Defer setting iframe src until PIN is validated in checkPin()
+          fileCache[file.id] = {
+            blob: `https://docs.google.com/document/d/${
+              googleDocId || file.id
+            }/preview?tab=t.0`,
+            mimeType: file.mimeType,
+          };
+          console.log(`${file.name} cached`);
         } else {
           showPreviewError("Unsupported file type");
           return;
@@ -969,9 +1015,43 @@ async function openFilePreview(file) {
         currentFileBlob = fileCache[file.id].blob;
         if (fileExtension === "pdf") {
           printButton.classList.add("hidden");
-          docPreviewIframe.src = currentFileBlob;
-          previewLoading.classList.add("hidden");
-          docPreviewIframe.classList.remove("hidden");
+          if (isSmallScreen) {
+            docPreviewIframe.src = `https://drive.google.com/file/d/${file.id}/preview`;
+            // Modify div inside iframe
+            docPreviewIframe.addEventListener(
+              "load",
+              () => {
+                try {
+                  const iframeDoc =
+                    docPreviewIframe.contentDocument ||
+                    docPreviewIframe.contentWindow.document;
+                  let targetDiv = iframeDoc.querySelector(
+                    ".ndfHFb-c4YZDc-Wrql6b.ndfHFb-c4YZDc-N4imRe-NMrWyd-RCfa3e"
+                  );
+                  if (!targetDiv) {
+                    const divs = iframeDoc.querySelectorAll("div");
+                    targetDiv = Array.from(divs).find(
+                      (div) =>
+                        div.style.width === "40px" && div.style.right === "12px"
+                    );
+                  }
+                  if (targetDiv) {
+                    targetDiv.style.width = "0px";
+                    targetDiv.style.right = "0px";
+                  }
+                } catch (e) {
+                  console.error("Error modifying iframe div:", e);
+                }
+                previewLoading.classList.add("hidden");
+                docPreviewIframe.classList.remove("hidden");
+              },
+              { once: true }
+            );
+          } else {
+            docPreviewIframe.src = currentFileBlob;
+            previewLoading.classList.add("hidden");
+            docPreviewIframe.classList.remove("hidden");
+          }
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           printButton.classList.remove("hidden");
           if (isSmallScreen) {
@@ -992,7 +1072,46 @@ async function openFilePreview(file) {
       } else {
         if (fileExtension === "pdf") {
           printButton.classList.add("hidden");
-          await previewPdfFile(file);
+          if (isSmallScreen) {
+            docPreviewIframe.src = `https://drive.google.com/file/d/${file.id}/preview`;
+            fileCache[file.id] = {
+              blob: docPreviewIframe.src,
+              mimeType: file.mimeType,
+            };
+            console.log(`${file.name} cached`);
+            // Modify div inside iframe
+            docPreviewIframe.addEventListener(
+              "load",
+              () => {
+                try {
+                  const iframeDoc =
+                    docPreviewIframe.contentDocument ||
+                    docPreviewIframe.contentWindow.document;
+                  let targetDiv = iframeDoc.querySelector(
+                    ".ndfHFb-c4YZDc-Wrql6b.ndfHFb-c4YZDc-N4imRe-NMrWyd-RCfa3e"
+                  );
+                  if (!targetDiv) {
+                    const divs = iframeDoc.querySelectorAll("div");
+                    targetDiv = Array.from(divs).find(
+                      (div) =>
+                        div.style.width === "40px" && div.style.right === "12px"
+                    );
+                  }
+                  if (targetDiv) {
+                    targetDiv.style.width = "0px";
+                    targetDiv.style.right = "0px";
+                  }
+                } catch (e) {
+                  console.error("Error modifying iframe div:", e);
+                }
+                previewLoading.classList.add("hidden");
+                docPreviewIframe.classList.remove("hidden");
+              },
+              { once: true }
+            );
+          } else {
+            await previewPdfFile(file);
+          }
         } else if (fileExtension === "doc" || fileExtension === "docx") {
           printButton.classList.remove("hidden");
           if (isSmallScreen) {
