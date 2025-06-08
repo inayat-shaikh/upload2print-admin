@@ -476,7 +476,7 @@ async function selectFolder(folderId, folderName, isSubject) {
   foldersList.querySelectorAll(".folder-item").forEach((item) => {
     item.classList.toggle("bg-gray-100", item.dataset.id === folderId);
   });
-  welcomeMessage.classList.add("hidden");
+  welcomeMessage.remove();
   contentContainer.classList.remove("hidden");
 
   if (folderCache[folderId]) {
