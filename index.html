@@ -253,9 +253,9 @@
             filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-            /* Epic entrance animation first, then breathing */
+            /* Epic entrance animation first, then enhanced breathing with pulse */
             animation: epicEntrance 2.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards,
-                breathe 3s ease-in-out 2.5s infinite;
+                enhancedBreathe 4s ease-in-out 2.5s infinite;
 
             /* Start invisible and scaled down */
             opacity: 0;
@@ -264,7 +264,7 @@
 
         #WelcomeFolder:hover {
             /* Enhanced hover effects */
-            animation: breathe 3s ease-in-out infinite, wiggle 0.6s ease-in-out;
+            animation: enhancedBreathe 4s ease-in-out infinite, wiggle 0.6s ease-in-out;
             filter: drop-shadow(0 15px 30px rgba(255, 117, 1, 0.4)) drop-shadow(0 0 20px rgba(255, 117, 1, 0.3));
             transform: scale(1.1) rotate(2deg);
         }
@@ -308,8 +308,8 @@
             }
         }
 
-        /* Gentle breathing animation - continuous */
-        @keyframes breathe {
+        /* Enhanced breathing animation with glow pulse - more engaging for mobile */
+        @keyframes enhancedBreathe {
 
             0%,
             100% {
@@ -455,16 +455,9 @@
             opacity: 0;
             transform: translateY(30px);
             animation: slideUpFade 1.5s ease-out 0.5s forwards;
-            text-align: center;
-        }
-
-        #welcomeMsg1 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
         }
 
         #welcomeMsg2 {
-            font-size: 0.875rem;
             animation-delay: 0.8s;
         }
 
@@ -485,13 +478,6 @@
             opacity: 0;
             transform: translateY(100%);
             animation: slideUpFooter 1s ease-out 2.3s forwards;
-            background-color: #2d3748;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
         }
 
         @keyframes slideUpFooter {
@@ -506,46 +492,38 @@
             }
         }
 
-        /*4th Animation*/
+        /* 4th Animation: Sliding of left subfolder */
         @media (min-width: 768px) {
             #welcome-message {
-                margin-left: 50%;
-                transform: translateX(95);
+                display: grid;
+                place-items: center;
+                position: fixed;
+                inset: 0;
                 animation: removeMargin 1.2s ease-out 3.5s forwards;
-                /* Sync animation */
             }
 
             #bottom-drawer {
                 opacity: 0;
                 transform: translateX(-100%);
-                position: fixed;
-                left: 0;
-                top: 0;
-                bottom: 60px;
-                width: 33.33%;
-                background: white;
-                border-right: 1px solid #d1d5db;
-                display: none;
                 animation: slideInLeft 1.2s ease-out 3.5s forwards;
-                /* Sync animation */
-            }
-
-            #bottom-drawer {
-                display: flex;
-                flex-direction: column;
             }
         }
 
-        /* Keyframe for #welcome-message */
+        /* Keyframe for #welcome-message*/
         @keyframes removeMargin {
             0% {
-                margin-left: 50%;
-                transform: translateX(95);
+                display: grid;
+                place-items: center;
+                position: fixed;
+                inset: 0;
             }
 
             100% {
-                margin-left: 95%;
-                transform: translateX(95);
+                display: grid;
+                place-items: center;
+                position: fixed;
+                inset: 0;
+                left: 35%;
             }
         }
 
@@ -570,6 +548,10 @@
             transition: all 0.3s ease;
         }
 
+        #menu-button:hover {
+            transform: scale(1.05);
+        }
+
         @keyframes popIn {
             0% {
                 opacity: 0;
@@ -586,6 +568,16 @@
                 transform: scale(1) rotate(0deg);
             }
         }
+
+        @media (max-width: 768px) {
+            #welcome-message {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 100%;
+            }
+        }
     </style>
 </head>
 
@@ -599,8 +591,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
     </button>
-
-
 
     <!-- Main container -->
     <main class="flex flex-1 overflow-hidden relative">
@@ -928,6 +918,7 @@
     <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
     <script src="app2.js"></script>
     <script>
+
         // Drawer toggle functionality
         const menuButton = document.getElementById('menu-button');
         const drawer = document.getElementById('bottom-drawer');
