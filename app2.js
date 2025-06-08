@@ -37,6 +37,9 @@ const pinInputs = [
   document.getElementById("code-3"),
   document.getElementById("code-4"),
 ];
+const globalmenuButton = document.getElementById("menu-button");
+const flotingSvg = document.getElementById("flotingSvg");
+const footerBottom = document.getElementById("footerBottom");
 
 // State
 let currentFolderId = null;
@@ -53,6 +56,28 @@ let pollingIntervalId = null;
 let expectedPin = null; // To store the PIN extracted from filename
 let currentGoogleDocId = null; // To store the Google Doc ID extracted from filename
 
+// Function to adjust main margin-bottom based on footer height
+function adjustMainMargin() {
+  const footer = document.getElementById("footerBottom");
+  const main = document.querySelector("main");
+  const gap = 4; // Gap in pixels between main and footer
+
+  if (footer && main) {
+    if (footer.classList.contains("hidden")) {
+      main.style.marginBottom = "0px"; // No margin when footer is hidden
+    } else {
+      const footerHeight = footer.offsetHeight; // Includes padding, excludes margins
+      main.style.marginBottom = `${footerHeight + gap}px`;
+    }
+  }
+}
+
+// Run on DOM load
+document.addEventListener("DOMContentLoaded", adjustMainMargin);
+
+// Update on window resize
+window.addEventListener("resize", adjustMainMargin);
+
 // Initialize the application
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
@@ -61,9 +86,23 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPinInputListeners();
 });
 
-// Initialize the app
+// Updated initApp to check initial content-list state
 async function initApp() {
   previewModal.classList.add("hidden");
+  const contentList = document.getElementById("content-list");
+  const footer = document.getElementById("footerBottom");
+  const menuButton = document.getElementById("menu-button");
+
+  if (contentList.querySelector("li.mb-10.ms-6.chat-bubble")) {
+    footer.classList.add("hidden");
+    footer.style.bottom = "-100px"; // JavaScript fallback
+    if (menuButton) menuButton.style.bottom = "28px";
+  } else {
+    footer.classList.remove("hidden");
+    footer.style.bottom = "0px"; // JavaScript fallback
+    if (menuButton) menuButton.style.bottom = "80px";
+  }
+  adjustMainMargin();
   try {
     await loadFolders(ROOT_FOLDER_ID);
   } catch (error) {
@@ -92,6 +131,26 @@ function setupEventListeners() {
   folderSearch.addEventListener("input", (e) =>
     filterFolders(e.target.value.toLowerCase())
   );
+
+  // Scroll handling for content-container
+  const contentContainer = document.getElementById("content-container");
+  let lastScrollTop = 0;
+
+  contentContainer.addEventListener("scroll", () => {
+    const menuButton = document.getElementById("menu-button");
+    const currentScrollTop = contentContainer.scrollTop;
+
+    if (currentScrollTop > lastScrollTop) {
+      // Scrolling down
+      menuButton.classList.add("hidden-right");
+      flotingSvg.classList.add("hidden");
+    } else {
+      // Scrolling up
+      menuButton.classList.remove("hidden-right");
+      flotingSvg.classList.remove("hidden");
+    }
+    lastScrollTop = currentScrollTop;
+  });
 }
 
 // Setup PIN input listeners
@@ -122,26 +181,111 @@ function checkPin() {
     .split(".")
     .pop()
     .toLowerCase();
+  const hasGoogleDocId = !!currentGoogleDocId; // Explicitly check for currentGoogleDocId
 
   if (enteredPin.length === 4) {
     if (enteredPin === expectedPin) {
       pinContainer.classList.add("hidden");
       downloadButton.classList.remove("hidden");
-      printButton.classList.remove("hidden");
-      if (
-        !isSmallScreen ||
-        (fileExtension !== "doc" && fileExtension !== "docx")
-      ) {
-        docPreviewIframe.classList.remove("hidden");
-      } else if (
-        isSmallScreen &&
-        (fileExtension === "doc" || fileExtension === "docx")
-      ) {
-        previewError.classList.remove("hidden");
-        errorMessage.innerHTML =
-          'File preview not available on mobile. Use the <svg class="inline-block w-5 h-5 text-gray-800 group-hover:text-blue-700 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"> <path fill-rule="evenodd" d="M8 3a2 2 0 0 0-2 2v3h12V5a2 2 0 0 0-2-2H8Zm-3 7a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1v-4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5Zm4 11a1 1 0 0 1-1-1v-4h8v4a1 1 0 0 1-1 1H9Z" clip-rule="evenodd"></path> </svg> button to preview the file.';
-        docPreviewIframe.classList.add("hidden");
-        printButton.click(); // Auto-trigger print after PIN validation
+      printButton.classList.remove("hidden"); // Show print button by default
+      previewLoading.classList.remove("hidden"); // Show spinner until iframe loads
+      docPreviewIframe.classList.add("hidden"); // Ensure iframe is hidden until loaded
+
+      // Set iframe src after PIN validation
+      if (fileExtension === "pdf") {
+        if (isSmallScreen) {
+          docPreviewIframe.src = `https://drive.google.com/file/d/${currentFileId}/preview`;
+          fileCache[currentFileId] = {
+            blob: docPreviewIframe.src,
+            mimeType: "application/pdf",
+          };
+          docPreviewIframe.addEventListener(
+            "load",
+            () => {
+              previewLoading.classList.add("hidden");
+              docPreviewIframe.classList.remove("hidden");
+            },
+            { once: true }
+          );
+        } else {
+          // Check if file content is available; fetch if not
+          if (
+            !fileCache[currentFileId] ||
+            !fileCache[currentFileId].blob ||
+            fileCache[currentFileId].blob.startsWith("https://")
+          ) {
+            fetchFileContent(currentFileId)
+              .then((fileContent) => {
+                if (!fileContent)
+                  throw new Error("Failed to fetch file content");
+                currentFileBlob = `data:application/pdf;base64,${fileContent}`;
+                fileCache[currentFileId] = {
+                  blob: currentFileBlob,
+                  mimeType: "application/pdf",
+                };
+                console.log(`${previewFilename.textContent} cached`);
+                docPreviewIframe.src = currentFileBlob;
+                docPreviewIframe.addEventListener(
+                  "load",
+                  () => {
+                    previewLoading.classList.add("hidden");
+                    docPreviewIframe.classList.remove("hidden");
+                  },
+                  { once: true }
+                );
+              })
+              .catch((error) => {
+                console.error("Error fetching PDF content:", error);
+                showPreviewError("Error loading PDF");
+              });
+          } else {
+            currentFileBlob = fileCache[currentFileId].blob;
+            docPreviewIframe.src = currentFileBlob;
+            docPreviewIframe.addEventListener(
+              "load",
+              () => {
+                previewLoading.classList.add("hidden");
+                docPreviewIframe.classList.remove("hidden");
+              },
+              { once: true }
+            );
+          }
+        }
+      } else if (fileExtension === "doc" || fileExtension === "docx") {
+        if (hasGoogleDocId) {
+          docPreviewIframe.src = isSmallScreen
+            ? `https://drive.google.com/file/d/${
+                currentGoogleDocId || currentFileId
+              }/preview`
+            : `https://docs.google.com/document/d/${
+                currentGoogleDocId || currentFileId
+              }/preview?tab=t.0`;
+          fileCache[currentFileId] = {
+            blob: docPreviewIframe.src,
+            mimeType:
+              fileExtension === "doc"
+                ? "application/msword"
+                : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          };
+          console.log(`${previewFilename.textContent} cached`);
+          docPreviewIframe.addEventListener(
+            "load",
+            () => {
+              previewLoading.classList.add("hidden");
+              docPreviewIframe.classList.remove("hidden");
+            },
+            { once: true }
+          );
+        } else {
+          // Non-G DOC (DOC) files
+          printButton.classList.add("hidden"); // Hide print button for DOC
+          previewLoading.classList.add("hidden");
+          previewError.classList.remove("hidden");
+          errorMessage.textContent =
+            "Please wait while your file is being downloaded.";
+          docPreviewIframe.classList.add("hidden");
+          setTimeout(() => downloadButton.click(), 100); // Auto-trigger download
+        }
       }
       // Reset borders to default
       pinInputs.forEach((input) => {
@@ -179,6 +323,7 @@ function resetPinInputs() {
 // Reset preview modal state
 function resetPreviewModal() {
   previewModal.classList.add("hidden");
+  document.body.classList.remove("no-scroll"); // Re-enable page scrolling
   if (currentPreviewUrl) {
     revokeTemporaryAccess(currentFileId).catch((e) =>
       console.error("Failed to revoke temporary access:", e)
@@ -289,12 +434,7 @@ function renderFolders(folders) {
       <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
         <div class="flex items-center">
           <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-            <svg class="w-6 h-6 text-gray-500 dark:text-gray-500" aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                <path fill-rule="evenodd"
-                    d="M3 6a2 2 0 0 1 2-2h5.532a2 2 0 0 1 1.536.72l1.9 2.28H3V6Zm0 3v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9H3Z"
-                    clip-rule="evenodd" />
-            </svg>
+          <img src="./Folder_SVG.svg" class="w-6 h-6 shrink-0 alt="Folder Icon"/>
           </div>
           <div class="flex-1">
             <div class="folder-name">${folder.name}</div>
@@ -330,7 +470,7 @@ function renderFolders(folders) {
   });
 }
 
-// Select a folder and load its contents
+// Updated selectFolder to handle empty folders
 async function selectFolder(folderId, folderName, isSubject) {
   currentFolderId = folderId;
   foldersList.querySelectorAll(".folder-item").forEach((item) => {
@@ -384,6 +524,11 @@ async function selectFolder(folderId, folderName, isSubject) {
   } catch (error) {
     console.error("Error loading content:", error);
     showErrorMessage(contentList, "Failed to load content");
+    footerBottom.classList.remove("hidden");
+    footerBottom.style.bottom = "0px"; // Reset footer
+    const menuButton = document.getElementById("menu-button");
+    if (menuButton) menuButton.style.bottom = "80px";
+    adjustMainMargin();
     stopPolling();
   } finally {
     loadingContent.classList.add("hidden");
@@ -401,10 +546,11 @@ function updateBreadcrumb(courseName, subjectName = null) {
   const courseLi = document.createElement("li");
   courseLi.className = "inline-flex items-center";
   courseLi.innerHTML = `
-      <a href="#" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-          <svg class="w-3 h-3 me-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-              <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
-          </svg>
+      <a href="#" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-800 dark:text-gray-400 dark:hover:text-white">
+      <svg class="w-4 h-4 me-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 48 48">
+        <path
+            d="M39.5,43h-9c-1.381,0-2.5-1.119-2.5-2.5v-9c0-1.105-0.895-2-2-2h-4c-1.105,0-2,0.895-2,2v9c0,1.381-1.119,2.5-2.5,2.5h-9	C7.119,43,6,41.881,6,40.5V21.413c0-2.299,1.054-4.471,2.859-5.893L23.071,4.321c0.545-0.428,1.313-0.428,1.857,0L39.142,15.52	C40.947,16.942,42,19.113,42,21.411V40.5C42,41.881,40.881,43,39.5,43z" />
+    </svg>
           ${courseName}
       </a>
   `;
@@ -423,7 +569,7 @@ function updateBreadcrumb(courseName, subjectName = null) {
               <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
               </svg>
-              <a href="#" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">${subjectName}</a>
+              <a href="#" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-800 md:ms-2 dark:text-gray-400 dark:hover:text-white">${subjectName}</a>
           </div>
       `;
     subjectLi.querySelector("a").addEventListener("click", (e) => {
@@ -468,9 +614,7 @@ function updateBreadcrumb(courseName, subjectName = null) {
               <div class="relative w-full">
                   <input type="text" id="search-dropdown" class="block p-2.5 w-full z-20 text-sm text-gray-900 bg-gray-50 rounded-e-lg border-s-gray-50 border-s-2 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-s-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-blue-500" placeholder="Search files..." required style="border-top-right-radius: 25px; border-bottom-right-radius: 25px;"/>
                   <button type="submit" class="absolute top-0 end-0 p-2.5 text-sm font-medium h-full text-blue-600">
-                      <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
-                      </svg>
+                  <img class="w-5 h-5" src="https://img.icons8.com/lollipop/48/search.png" alt="search">
                       <span class="sr-only">Search</span>
                   </button>
               </div>
@@ -624,33 +768,30 @@ function renderSubfolders(subfolders) {
   contentList.classList.remove("pl-4");
 
   contentList.innerHTML = `
-    <div class="p-5 border border-gray-100 rounded-lg bg-white dark:bg-gray-800 dark:border-gray-700">
-      <time class="text-lg font-semibold text-gray-900 dark:text-white"></time>
-      <form class="max-w-md mx-auto mb-3 sticky top-0 z-10">
+    <div class="p-5 border border-gray-100 rounded-lg bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg dynamic-div-height">
+    <time class="text-lg font-semibold text-gray-900 dark:text-white"></time>
+    <form class="max-w-md mx-auto mb-3 sticky top-0 z-10">
         <label for="subject-search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
         <div class="relative">
-          <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-            <svg class="w-4 h-4 text-blue-600 dark:text-blue-600" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-            </svg>
-          </div>
-          <input type="text" id="subject-search" class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Search subjects..." required style="border-radius: 25px;"/>
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <img class="w-5 h-5" src="https://img.icons8.com/lollipop/48/search.png" alt="search" />
+            </div>
+            <input type="text" id="subject-search" class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Search subjects..." required style="border-radius: 25px;"/>
         </div>
-      </form>
-      <ol class="mt-3 divide-y divide-y-gray-200 dark:divide-gray-700 overflow-y-auto" style="height: 415px;"></ol>
-    </div>
+    </form>
+    <ol class="mt-3 divide-y divide-y-gray-200 dark:divide-gray-700 overflow-y-auto dynamic-ol-height"></ol>
+</div>
   `;
   const ol = contentList.querySelector("ol");
   subfolders.forEach((folder) => {
     const subfolderItem = document.createElement("li");
-    subfolderItem.innerHTML = `
-      <a href="#" class="flex items-center p-2 bg-gray-100 hover:bg-blue-600 transform scale-95 transition duration-300 ease-in-out hover:scale-100 group" style="
+    subfolderItem.innerHTML = `<a href="#" class="flex items-center p-2 bg-gray-100 hover:bg-blue-600 transform scale-95 transition duration-300 ease-in-out hover:scale-100 group" style="
     border-radius: 40px;
     margin-top: 5px;
     margin-bottom: 5px;
     margin-right: 7px;">
         <div class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 mr-3">
-          <i class="fas fa-folder text-gray-500 w-11 h-11 flex items-center justify-center" style="margin-top: 2px; margin-bottom: 2px; margin-right: 2px; margin-left: 2px;"></i>
+          <img class="w-7 h-7 flex items-center justify-center" src="./Folder_SVG.svg" alt="Folder Icon" style="margin-top: 10px; margin-left: 10px;"/>
         </div>
         <div class="text-base font-normal text-gray-600 dark:text-gray-400 sm:flex-1">
           <span class="font-medium text-gray-900 dark:text-white group-hover:text-gray-200">${folder.name}</span>
@@ -659,13 +800,32 @@ function renderSubfolders(subfolders) {
              xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m14 0-4 4m4-4-4-4" />
         </svg>
-      </a>
-    `;
+      </a>`; // Unchanged
     subfolderItem.querySelector("a").addEventListener("click", (e) => {
       e.preventDefault();
       selectFolder(folder.id, folder.name, true);
     });
     ol.appendChild(subfolderItem);
+  });
+
+  footerBottom.classList.remove("hidden");
+  footerBottom.style.bottom = "0px"; // Reset footer
+  const menuButton = document.getElementById("menu-button");
+  if (menuButton) menuButton.style.bottom = "80px";
+  adjustMainMargin();
+
+  let lastOlScrollTop = 0;
+  ol.addEventListener("scroll", () => {
+    const menuButton = document.getElementById("menu-button");
+    const currentOlScrollTop = ol.scrollTop;
+    if (currentOlScrollTop > lastOlScrollTop) {
+      menuButton.classList.add("hidden-right");
+      flotingSvg.classList.add("hidden");
+    } else {
+      menuButton.classList.remove("hidden-right");
+      flotingSvg.classList.remove("hidden");
+    }
+    lastOlScrollTop = currentOlScrollTop;
   });
 
   document.getElementById("subject-search").addEventListener("input", (e) => {
@@ -775,7 +935,7 @@ function renderFiles(files) {
     const seconds = date.getSeconds().toString().padStart(2, "0");
     const ampm = hours >= 12 ? "PM" : "AM";
     hours = hours % 12 || 12;
-    return `${day} ${month} ${year}, ${hours}:${minutes}:${seconds} ${ampm}`;
+    return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
   }
 
   files.forEach((file) => {
@@ -790,10 +950,9 @@ function renderFiles(files) {
     const size = file.size || "Unknown";
     const fileType = file.fileType || "Unknown";
 
-    const pdfIcon = `
-      <svg fill="none" aria-hidden="true" class="w-5 h-5 shrink-0 ${
-        window.innerWidth < 768 ? "md:w-4 md:h-4" : ""
-      }" viewBox="0 0 20 21">
+    const pdfIcon = `<svg fill="none" aria-hidden="true" class="w-7 h-7 shrink-0 ${
+      window.innerWidth < 768 ? "md:w-7 md:h-7" : ""
+    }" viewBox="0 0 20 21">
         <g clip-path="url(#clip0_3173_1381)">
           <path fill="#E2E5E7" d="M5.024.5c-.688 0-1.25.563-1.25 1.25v17.5c0 .688.562 1.25 1.25 1.25h12.5c.687 0 1.25-.563 1.25-1.25V5.5l-5-5h-8.75z"></path>
           <path fill="#B0B7BD" d="M15.024 5.5h3.75l-5-5v3.75c0 .688.562 1.25 1.25 1.25z"></path>
@@ -807,19 +966,15 @@ function renderFiles(files) {
             <path fill="#fff" d="M0 0h20v20H0z" transform="translate(0 .5)"></path>
           </clipPath>
         </defs>
-      </svg>
-    `;
-    const docIcon = `<img src="./MsWord_SVG.svg" class="w-5 h-5 shrink-0 ${
-      window.innerWidth < 768 ? "md:w-4 md:h-4" : ""
-    }" alt="Document Icon" />`;
-    const googleDocIcon = `<img src="./GoogleDoc_SVG.svg" class="w-5 h-5 shrink-0 ${
-      window.innerWidth < 768 ? "md:w-4 md:h-4" : ""
-    }" alt="Document Icon" />`;
+      </svg>`; // Unchanged
+    const docIcon = `<img src="./MsWord_SVG.svg" class="w-7 h-7 shrink-0 ${
+      window.innerWidth < 768 ? "md:w-7 md:h-7" : ""
+    }" alt="Document Icon" />`; // Unchanged
+    const googleDocIcon = `<img src="./GoogleDoc_SVG.svg" class="w-7 h-7 shrink-0 ${
+      window.innerWidth < 768 ? "md:w-7 md:h-7" : ""
+    }" alt="Document Icon" />`; // Unchanged
 
-    // Check if the file has a Google Doc ID in its name
     const hasGoogleDocId = file.name.includes("{") && file.name.includes("}");
-
-    // Use the appropriate icon and values based on whether it's a Google Doc-linked file
     const icon =
       fileType === "PDF" ? pdfIcon : hasGoogleDocId ? googleDocIcon : docIcon;
     const displaySize = hasGoogleDocId ? "Uploaded Through Link" : size;
@@ -827,11 +982,10 @@ function renderFiles(files) {
 
     const chatBubble = document.createElement("li");
     chatBubble.className = "mb-10 ms-6 chat-bubble";
-    chatBubble.innerHTML = `
-      <span class="absolute flex items-center justify-center w-7 h-7 bg-blue-100 rounded-full -start-3 ring-8 ring-white dark:ring-gray-900 dark:bg-blue-900 text-sm font-medium text-gray-900 dark:text-white roll-number">
+    chatBubble.innerHTML = `<span class="absolute flex items-center justify-center w-7 h-7 bg-blue-100 rounded-full -start-3 ring-8 ring-white dark:ring-gray-900 dark:bg-blue-900 text-sm font-medium text-gray-900 dark:text-white roll-number">
         ${rollNumber}
       </span>
-      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-xs dark:bg-gray-700 dark:border-gray-600 cursor-pointer relative group min-h-fit" style="border-radius: 30px;">
+      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-700 dark:border-gray-600 cursor-pointer relative group min-h-fit" style="border-radius: 35px;">
         <div class="items-center justify-between mb-3 sm:flex">
           <time class="mb-1 text-xs font-normal text-gray-400 sm:order-last sm:mb-0"><span class="bg-blue-100 text-blue-800 text-xs font-medium inline-flex items-center px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-blue-400 border border-blue-400" style="border-radius: 30px;">
 <svg class="w-2.5 h-2.5 me-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
@@ -839,11 +993,13 @@ function renderFiles(files) {
 </svg>
 ${time}
 </span></time>
-          <div class="text-sm font-normal text-gray-500 dark:text-gray-300">
+          <div class="text-sm font-normal text-gray-500 dark:text-gray-300 ${
+            window.innerWidth < 768 ? "pt-3" : ""
+          }">
             <a href="#" class="font-semibold text-gray-900 dark:text-white hover:underline">${fileId}</a>
           </div>
         </div>
-        <div class="p-3 text-xs italic font-normal text-gray-500 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300 min-h-fit" style="border-radius: 30px;">
+        <div class="p-3 mb-2 text-xs italic font-normal text-gray-500 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300 min-h-fit" style="border-radius: 30px;">
           <div class="flex items-start gap-2.5">
             <div class="flex flex-col gap-2.5">
               <div class="leading-1.5 flex w-full ${
@@ -875,9 +1031,8 @@ ${time}
             </button>
           </div>
         </div>
-      </div>
-    `;
-
+        <span class="ml-2 text-sm italic font-normal text-gray-500 dark:text-gray-300 min-h-fit">Uploaded By: Inayat</span>
+      </div>`; // Unchanged
     chatBubble.querySelector("a").addEventListener("click", (e) => {
       e.preventDefault();
       openFilePreview(file);
@@ -889,6 +1044,12 @@ ${time}
     });
     ol.appendChild(chatBubble);
   });
+
+  footerBottom.classList.add("hidden");
+  footerBottom.style.bottom = "-100px"; // JavaScript animation
+  const menuButton = document.getElementById("menu-button");
+  if (menuButton) menuButton.style.bottom = "28px";
+  adjustMainMargin();
 }
 
 // Open file preview modal with PIN handling
@@ -915,6 +1076,7 @@ async function openFilePreview(file) {
 
   previewFilename.textContent = displayName;
   previewModal.classList.remove("hidden");
+  document.body.classList.add("no-scroll"); // Disable page scrolling
   pdfContainer.classList.add("hidden");
   docxContainer.classList.add("hidden");
   docPreviewIframe.classList.add("hidden");
@@ -925,6 +1087,7 @@ async function openFilePreview(file) {
 
   const fileExtension = fileName.split(".").pop().toLowerCase();
   const isSmallScreen = window.innerWidth < 768;
+  const hasGoogleDocId = !!googleDocId; // Explicitly check for googleDocId from regex
 
   // Handle PIN protection
   if (expectedPin) {
@@ -940,18 +1103,16 @@ async function openFilePreview(file) {
     try {
       if (fileCache[file.id]) {
         currentFileBlob = fileCache[file.id].blob;
-        if (fileExtension === "pdf") {
-          docPreviewIframe.src = currentFileBlob;
-        } else if (fileExtension === "doc" || fileExtension === "docx") {
-          docPreviewIframe.src = `https://docs.google.com/document/d/${
-            googleDocId || file.id
-          }/preview?tab=t.0${isSmallScreen ? "&mobilebasic=0&hl=en" : ""}`;
-        }
+        // For PIN-protected files, src is set after PIN validation in checkPin()
       } else {
         if (fileExtension === "pdf") {
-          await previewPdfFile(file);
+          if (isSmallScreen) {
+            // For small screens, src is set after PIN validation in checkPin()
+          } else {
+            await previewPdfFile(file);
+          }
         } else if (fileExtension === "doc" || fileExtension === "docx") {
-          await previewDocFile(file, googleDocId, isSmallScreen);
+          // For DOC/DOCX (both G DOC and DOC), src is set after PIN validation in checkPin()
         } else {
           showPreviewError("Unsupported file type");
           return;
@@ -968,45 +1129,100 @@ async function openFilePreview(file) {
       if (fileCache[file.id]) {
         currentFileBlob = fileCache[file.id].blob;
         if (fileExtension === "pdf") {
-          printButton.classList.add("hidden");
-          docPreviewIframe.src = currentFileBlob;
-          previewLoading.classList.add("hidden");
-          docPreviewIframe.classList.remove("hidden");
+          printButton.classList.remove("hidden"); // Show print button for PDFs
+          docPreviewIframe.src = isSmallScreen
+            ? `https://drive.google.com/file/d/${file.id}/preview`
+            : currentFileBlob;
+          docPreviewIframe.addEventListener(
+            "load",
+            () => {
+              previewLoading.classList.add("hidden");
+              docPreviewIframe.classList.remove("hidden");
+            },
+            { once: true }
+          );
         } else if (fileExtension === "doc" || fileExtension === "docx") {
-          printButton.classList.remove("hidden");
-          if (isSmallScreen) {
+          if (hasGoogleDocId) {
+            printButton.classList.remove("hidden"); // Show print button for G DOC
+            docPreviewIframe.src = isSmallScreen
+              ? `https://drive.google.com/file/d/${
+                  googleDocId || file.id
+                }/preview`
+              : `https://docs.google.com/document/d/${
+                  googleDocId || file.id
+                }/preview?tab=t.0`;
+            fileCache[file.id] = {
+              blob: docPreviewIframe.src,
+              mimeType:
+                fileExtension === "doc"
+                  ? "application/msword"
+                  : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            };
+            console.log(`${fileName} cached`);
+            docPreviewIframe.addEventListener(
+              "load",
+              () => {
+                previewLoading.classList.add("hidden");
+                docPreviewIframe.classList.remove("hidden");
+              },
+              { once: true }
+            );
+          } else {
+            // Non-G DOC (DOC) files
+            printButton.classList.add("hidden"); // Hide print button for DOC
             previewLoading.classList.add("hidden");
             previewError.classList.remove("hidden");
-            errorMessage.innerHTML =
-              'File preview not available on mobile. Use the <svg class="inline-block w-5 h-5 text-gray-800 group-hover:text-blue-700 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"> <path fill-rule="evenodd" d="M8 3a2 2 0 0 0-2 2v3h12V5a2 2 0 0 0-2-2H8Zm-3 7a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1v-4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5Zm4 11a1 1 0 0 1-1-1v-4h8v4a1 1 0 0 1-1 1H9Z" clip-rule="evenodd"></path> </svg> button to preview the file.';
+            errorMessage.textContent =
+              "Please wait while your file is being downloaded.";
             docPreviewIframe.classList.add("hidden");
-            printButton.click(); // Auto-trigger print
-          } else {
-            docPreviewIframe.src = `https://docs.google.com/document/d/${
-              googleDocId || file.id
-            }/preview?tab=t.0`;
-            previewLoading.classList.add("hidden");
-            docPreviewIframe.classList.remove("hidden");
+            setTimeout(() => downloadButton.click(), 100); // Auto-trigger download
           }
+        } else {
+          printButton.classList.add("hidden");
+          showPreviewError("Unsupported file type");
         }
       } else {
         if (fileExtension === "pdf") {
-          printButton.classList.add("hidden");
+          printButton.classList.remove("hidden"); // Show print button for PDFs
           await previewPdfFile(file);
         } else if (fileExtension === "doc" || fileExtension === "docx") {
-          printButton.classList.remove("hidden");
-          if (isSmallScreen) {
+          if (hasGoogleDocId) {
+            printButton.classList.remove("hidden"); // Show print button for G DOC
+            docPreviewIframe.src = isSmallScreen
+              ? `https://drive.google.com/file/d/${
+                  googleDocId || file.id
+                }/preview`
+              : `https://docs.google.com/document/d/${
+                  googleDocId || file.id
+                }/preview?tab=t.0`;
+            fileCache[file.id] = {
+              blob: docPreviewIframe.src,
+              mimeType:
+                fileExtension === "doc"
+                  ? "application/msword"
+                  : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            };
+            console.log(`${fileName} cached`);
+            docPreviewIframe.addEventListener(
+              "load",
+              () => {
+                previewLoading.classList.add("hidden");
+                docPreviewIframe.classList.remove("hidden");
+              },
+              { once: true }
+            );
+          } else {
+            // Non-G DOC (DOC) files
+            printButton.classList.add("hidden"); // Hide print button for DOC
             previewLoading.classList.add("hidden");
             previewError.classList.remove("hidden");
-            errorMessage.innerHTML =
-              'File preview not available on mobile. Use the <svg class="inline-block w-5 h-5 text-gray-800 group-hover:text-blue-700 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"> <path fill-rule="evenodd" d="M8 3a2 2 0 0 0-2 2v3h12V5a2 2 0 0 0-2-2H8Zm-3 7a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1v-4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5Zm4 11a1 1 0 0 1-1-1v-4h8v4a1 1 0 0 1-1 1H9Z" clip-rule="evenodd"></path> </svg> button to preview the file.';
+            errorMessage.textContent =
+              "Please wait while your file is being downloaded.";
             docPreviewIframe.classList.add("hidden");
-            printButton.click(); // Auto-trigger print
-          } else {
-            await previewDocFile(file, googleDocId);
+            setTimeout(() => downloadButton.click(), 100); // Auto-trigger download
           }
         } else {
-          printButton.classList.remove("hidden");
+          printButton.classList.add("hidden");
           showPreviewError("Unsupported file type");
         }
       }
@@ -1053,13 +1269,25 @@ async function previewDocFile(file, googleDocId = null, isMobile = false) {
 
 // Preview PDF file using data URI
 async function previewPdfFile(file) {
+  const isSmallScreen = window.innerWidth < 768;
   try {
-    const fileContent = await fetchFileContent(file.id);
-    if (!fileContent) throw new Error("Failed to fetch file content");
-    currentFileBlob = `data:application/pdf;base64,${fileContent}`;
-    fileCache[file.id] = { blob: currentFileBlob, mimeType: "application/pdf" };
+    if (isSmallScreen) {
+      docPreviewIframe.src = `https://drive.google.com/file/d/${file.id}/preview`;
+      fileCache[file.id] = {
+        blob: docPreviewIframe.src,
+        mimeType: "application/pdf",
+      };
+    } else {
+      const fileContent = await fetchFileContent(file.id);
+      if (!fileContent) throw new Error("Failed to fetch file content");
+      currentFileBlob = `data:application/pdf;base64,${fileContent}`;
+      fileCache[file.id] = {
+        blob: currentFileBlob,
+        mimeType: "application/pdf",
+      };
+      docPreviewIframe.src = currentFileBlob;
+    }
     console.log(`${file.name} cached`);
-    docPreviewIframe.src = currentFileBlob;
     docPreviewIframe.addEventListener(
       "load",
       () => {
