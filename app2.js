@@ -1,6 +1,6 @@
 setTimeout(() => {
   alert(
-    "This project is currently in the development phase but is suitable for exploration\nFor exploration, you can select: AI&DS-A → IAI."
+    "This project is currently in the development phase but is suitable for exploration\nFor exploration, you can select: AI&DS-A → IAI.\nPIN To Some Protected Files: 1234"
   );
 }, 5005);
 // Configuration
