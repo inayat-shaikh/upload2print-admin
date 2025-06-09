@@ -1,4 +1,8 @@
-alert("This project is currently in the development phase but is suitable for exploration\nFor exploration, you can select: AI&DS-A → IAI.");
+setTimeout(() => {
+  alert(
+    "This project is currently in the development phase but is suitable for exploration\nFor exploration, you can select: AI&DS-A → IAI."
+  );
+}, 5005);
 // Configuration
 const APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyVI3fTuXOEetJWrM-H4NLthE6z-wjaQot6oUgMYv9mXi6L_GRXCu6Zcucc-zA2Mu6nDA/exec";
